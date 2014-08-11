@@ -1,0 +1,27 @@
+### Apt configuration
+jiocloud::system::local_repo_ip: 10.135.123.60
+jiocloud::system::apt_sources:
+  precise: { location: 'http://10.135.96.60/mirror1/mirror/archive.ubuntu.com/ubuntu', repos: 'main restricted universe multiverse', mirror_url: 'http://archive.ubuntu.com/ubuntu'}
+  precise-updates: { location: 'http://10.135.96.60/mirror1/mirror/archive.ubuntu.com/ubuntu', release: 'precise-updates', repos: 'main restricted universe multiverse', mirror_url: 'http://archive.ubuntu.com/ubuntu'}
+  puppetlabs: { location: 'http://10.135.96.60/mirror1/mirror/apt.puppetlabs.com', mirror_url: 'http://apt.puppetlabs.com'}
+  precise-security: { location: 'http://10.135.96.60/mirror1/mirror/security.ubuntu.com/ubuntu', release: 'precise-security', repos: 'main restricted universe multiverse', mirror_url: 'http://security.ubuntu.com/ubuntu/'}
+  zabbix: { location: 'http://10.135.96.60/mirror1/mirror/repo.zabbix.com/zabbix/2.0/ubuntu', mirror_url: 'http://repo.zabbix.com/zabbix/2.0/ubuntu/' }
+  mariadb: { location: 'http://10.135.96.60/mirror1/mirror/mirror.mephi.ru/mariadb/repo/5.5/ubuntu', mirror_url: 'http://mirror.mephi.ru/mariadb/repo/5.5/ubuntu'}
+  jenkins: { location: 'http://10.135.96.60/mirror1/mirror/pkg.jenkins-ci.org/debian', repos: '', release: 'binary/', mirror_url: 'http://pkg.jenkins-ci.org/debian'}
+  precise-updates-havana: { location: 'http://10.135.96.60/mirror1/mirror/ubuntu-cloud.archive.canonical.com/ubuntu', release: 'precise-updates/havana', mirror_url: 'http://ubuntu-cloud.archive.canonical.com/ubuntu precise-updates/havana' }
+  hp-support-pack: { location: 'http://10.135.96.60/mirror1/mirror/downloads.linux.hp.com/SDR/downloads/ProLiantSupportPack', release: 'lucid', repos: 'current/non-free', mirror_url: 'http://downloads.linux.hp.com/SDR/downloads/ProLiantSupportPack/' }
+  hp-mcp: { location: 'http://10.135.96.60/mirror1/mirror/downloads.linux.hp.com/SDR/downloads/mcp/Debian', repos: 'current/non-free', mirror_url: 'http://downloads.linux.hp.com/SDR/downloads/mcp/ubuntu' }
+  fabric: { location: 'http://10.135.96.60/mirror1/mirror/ppa.launchpad.net/chris-lea/fabric/ubuntu', mirror_url: 'http://ppa.launchpad.net/chris-lea/fabric/ubuntu' }
+  jiocloud-ppa: { location: 'http://10.135.96.60/mirror1/mirror/ppa.launchpad.net/jiocloud/ppa/ubuntu', mirror_url: 'http://ppa.launchpad.net/jiocloud/ppa/ubuntu' }
+  rustedhalo: { location: 'http://10.135.96.60/mirror1/mirror/jiocloud.rustedhalo.com/ubuntu', mirror_url: 'http://jiocloud.rustedhalo.com/ubuntu' }
+  ceph-apache: { location: 'http://10.135.96.60/mirror1/mirror/gitbuilder.ceph.com/apache2-deb-precise-x86_64-basic/ref/master', mirror_url: 'http://gitbuilder.ceph.com/apache2-deb-precise-x86_64-basic/ref/master' }
+  ceph-fastcgi: { location: 'http://10.135.96.60/mirror1/mirror/gitbuilder.ceph.com/libapache-mod-fastcgi-deb-precise-x86_64-basic/ref/master', mirror_url: 'http://gitbuilder.ceph.com/libapache-mod-fastcgi-deb-precise-x86_64-basic/ref/master' }
+  ceph-extras: { location: 'http://10.135.96.60/mirror1/mirror/ceph.com/packages/ceph-extras/debian', mirror_url: 'http://ceph.com/packages/ceph-extras/debian' }
+  ceph-emperor: { location: 'http://10.135.96.60/mirror1/mirror/ceph.com/debian-emperor', mirror_url: 'http://ceph.com/debian-emperor/' }
+  contrail: { location: 'http://10.135.96.60/mirror1/contrail', repos: ' ', release: './' }
+  ondrej_apache: { location: 'http://10.135.96.60/mirror1/mirror/ppa.launchpad.net/ondrej/apache2/ubuntu', mirror_url: 'http://ppa.launchpad.net/ondrej/apache2/ubuntu' }
+  precise-dev: { location: 'http://10.135.126.13/snapshots/%{apt_snapshot_version}/mirror/in.archive.ubuntu.com/ubuntu', repos: 'main restricted universe multiverse' }
+  precise-updates-dev: { location: 'http://10.135.126.13/snapshots/%{apt_snapshot_version}/mirror/in.archive.ubuntu.com/ubuntu', repos: 'main restricted universe multiverse', release: 'precise-updates' }
+  precise-security-dev: { location: 'http://10.135.126.13/snapshots/%{apt_snapshot_version}/mirror/security.ubuntu.com/ubuntu', release: 'precise-security', repos: 'main restricted universe' }
+  rustedhalo-dev: { location: 'http://10.135.126.13/snapshots/%{apt_snapshot_version}/mirror/jiocloud.rustedhalo.com/ubuntu' }
+## END Apt configuration

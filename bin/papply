@@ -1,0 +1,85 @@
+#!/bin/bash
+RUBYLIB=/usr/lib/ruby
+PUPPETDIR=/var/puppet/
+runstatus=0
+verbose=0
+debug=0
+local=0
+zabbix_alert=0
+upgrade_to_base=0
+[ -f /etc/puppet/local_facter.env ] && source /etc/puppet/local_facter.env
+export FACTER_my_project=${FACTER_my_project:-beta}
+if [ -f /var/puppet/hiera/papply.env ]; then
+  source /var/puppet/hiera/papply.env
+  export FACTER_env=`my_environment`
+else
+  echo "Error, Missing /var/puppet/hiera/papply.env, exiting"
+fi 
+
+function usage() {
+  printf "Usage: $0 [-v] [-d] [-l] [-z] [-b] \n\n-v\tVerbose\n-d\tDebug\n-l\tLocal mode\n-z\tSend alert to zabbix\n-b\tUpgrade the system to base snapshot version\n"
+  exit 100
+}
+
+while getopts "bdvlz" OPTION; do 
+  case "${OPTION}" in
+    v)
+      poptions="$poptions --verbose"
+      ;;
+    d)
+      poptions="$poptions --debug"
+      ;;
+    l) 
+      local=1
+      ;;
+    z) 
+      zabbix_alert=1
+      ;;
+    b)
+      upgrade_to_base=1
+      ;;    
+    *)
+      usage
+      ;;
+  esac
+done
+echo "`date`|INFO|puppet apply started"
+
+##set facters for apt source snapshots
+if [ $upgrade_to_base -eq 1 ]; then
+  export FACTER_apt_snapshot_version=$FACTER_base_snapshot_version
+else
+  export FACTER_apt_snapshot_version=$FACTER_target_snapshot_version
+fi
+
+if [ $local -eq 0 ]; then
+  svn revert -R $PUPPETDIR && svn --username $svn_user --trust-server-cert --password $svn_password --non-interactive up $PUPPETDIR; rv_svnup=$?
+  if [ $rv_svnup -ne 0 ]; then
+    svn upgrade $PUPPETDIR
+    svn --username $svn_user --trust-server-cert --password $svn_password --non-interactive up $PUPPETDIR; rv_svnup=$?
+    if [ $rv_svnup -ne 0 ]; then
+      runstatus=2;
+      echo "`date`|ERROR|SVN update Failed"
+    fi
+  fi
+fi
+
+puppet apply  $poptions  --modulepath ${PUPPETDIR}/modules --hiera_config=${PUPPETDIR}/hiera/hiera.yaml ${PUPPETDIR}/manifests/site.pp; rv_papply=$?
+if [ $rv_papply -ne 0 ]; then
+  runstatus=1
+  echo "`date`|ERROR|Puppet Apply Failed"
+fi
+
+if [ $zabbix_alert -eq 1 ]; then
+  echo "`date`|INFO|Alerting zabbix"
+  /usr/bin/zabbix_sender  -s `hostname` -z $zabbix_server -k ztrapper.puppet.run.status -o $runstatus; rv_zsender=$?
+else
+  rv_zsender=0
+fi
+if [ $rv_zsender -ne 0 ]; then
+   echo "`date`|ERROR|Failed Zabbix Sender to send zabbix alert"
+elif [ $runstatus -eq 0 ]; then
+   echo "`date`|INFO|Puppet apply completed successfully"
+fi
+
+

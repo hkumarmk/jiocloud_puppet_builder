@@ -1,0 +1,121 @@
+---
+##Global params
+jiocloud::public_address: "%{my_project}.jiocloud.com"
+jiocloud::compute_nodes: cp
+jiocloud::storage_nodes: st
+jiocloud::contrail_nodes: ct
+jiocloud::proxy_server: 10.1.0.5
+
+##System Params
+## changeme
+jiocloud::system::root_password: '$6$2mlJ5hkl$miJZoKybA3zK87zHE5HLVEoXoy5CJR8dHhWWnx52wjtyaBpj.92w6f860LfSaPeOTfL2qvhhbvWL0yPAI3elB/'
+jiocloud::system::autoreboot: true
+jiocloud::system::manage_hostname: false
+jiocloud::system::hosts:
+  "%{my_project}.jiocloud.com": { ip: 10.1.0.5 }
+    
+jiocloud::system::dnsdomainname: jiocloud.com
+jiocloud::system::dnssearch: 
+  - jiocloud.com
+jiocloud::system::dnsservers: 
+  - 10.1.0.5
+jiocloud::system::ntp_server_servers: 
+  - 10.135.121.138
+  - 10.135.121.107
+jiocloud::system::ntp_servers:
+  - 10.1.0.5
+jiocloud::system::compute_fe_interface: eth0
+jiocloud::system::compute_be_interface: eth1
+jiocloud::system::active_users:
+  - user1
+  - user2
+  - admin1
+
+jiocloud::system::sudo_users:
+  - admin1
+
+jiocloud::system::all_nodes_pkgs_to_install:
+  - vim
+  - htop
+  - ethtool
+  - zabbix-agent
+  - zabbix-sender
+  - linux-image-3.8.0-35-generic
+
+jiocloud::system::hosts_entries:
+  beta.jiocloud.com: { ip: '10.1.1.1'}
+  
+jiocloud::system::extra_active_apt_sources:
+  - jiocloud-ppa
+# - rustedhalo -> this repo has openstack packages which are not working, until that is fixed, disabling this
+  - precise-dev
+  - precise-updates-dev
+  - precise-security-dev
+# - rustedhalo-dev -> this repo has openstack packages which are not working, until that is fixed, disabling this
+
+## DB Params
+jiocloud::db::db_host_ip: '10.1.0.10'
+
+## Memecached Params
+jiocloud::memcached::max_memory: 1024
+jiocloud::memcached::nodes_address:
+  - 10.1.0.10
+
+##Openstack Params
+jiocloud::openstack::default_floating_pool: bea3063a-1b3f-48c4-852d-de3b9a3af1b5
+jiocloud::openstack::admin_password: Chang3M3
+jiocloud::openstack::admin_token: fa791a32703dfda365103109a2fb5039
+jiocloud::openstack::service_user_password: Chang3M3
+jiocloud::openstack::region: TestCloud
+jiocloud::openstack::keystone_cache_enabled: yes
+jiocloud::openstack::keystone_cache_backend_argument: url:10.1.0.10:11211
+jiocloud::openstack::nova_libvirt_type: qemu
+jiocloud::openstack::controller_nodes:
+  - oc1
+  - oc2
+jiocloud::openstack::nova_physical_volumes: '/dev/vdb'
+jiocloud::openstack::horizon::compress_enabled: 'False'
+jiocloud::openstack::horizon::offline_compression: 'False'
+jiocloud::openstack::horizon::allowed_hosts: '*'
+jiocloud::openstack::jiocloud_registration::enabled: no
+
+## Ceph Params
+jiocloud::ceph::fsid: fac04d85-db48-4564-b821-deebda046261
+jiocloud::ceph::mon_key: 'AQDIpehT8Kh8KxAAtrRrCeDZCfyvmBA9RsYWDg=='
+jiocloud::ceph::storage_cluster_interface: eth1
+jiocloud::ceph::ceph_public_interface: eth0
+#jiocloud::ceph:storage_cluster_network: 
+#jiocloud::ceph::ceph_public_network:
+jiocloud::ceph::radosgw_nodes:
+  - st1
+  - st2
+  - st3
+jiocloud::ceph::osds:
+  st1:
+    disks: 
+      - /dev/vdb
+  st2:
+    disks: 
+      - /dev/vdb
+  st3:
+    disks: 
+      - /dev/vdb
+jiocloud::ceph::mon_config:
+  st1: { mon_addr: '10.1.0.51'}
+  st2: { mon_addr: '10.1.0.52'}
+  st3: { mon_addr: '10.1.0.53'}
+
+jiocloud::ceph::mon_nodes: 
+  - st1
+  - st2
+  - st3
+#Contrail params
+jiocloud::contrail::discovery::server: '10.1.0.245'
+jiocloud::contrail::vrouter_num_controller: 2
+jiocloud::contrail::static_route_vhost0:
+  - 10.135.104.0/25
+  - 10.135.105.0/25
+  - 10.135.106.0/25
+  - 10.135.96.0/25
+jiocloud::contrail::edge_router_addr: '10.1.0.2'
+

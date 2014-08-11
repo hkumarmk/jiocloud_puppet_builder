@@ -1,0 +1,14 @@
+---
+:backends: 
+  - yaml
+:yaml:
+  :datadir: /var/puppet/hiera/ 
+:hierarchy:
+  - "envs/%{::env}"
+  - system
+  - system/users
+  - system/apt
+  - db
+  - openstack
+  - ceph
+  - common
