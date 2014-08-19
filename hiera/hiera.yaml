@@ -1,9 +1,11 @@
 ---
-:backends: 
+:backends:
   - yaml
 :yaml:
-  :datadir: /var/puppet/hiera/ 
+  :datadir: /var/puppet/hiera/
 :hierarchy:
+  - user
+  - resource_spawner
   - "envs/%{::env}"
   - system
   - system/users
@@ -11,4 +13,5 @@
   - db
   - openstack
   - ceph
+  - "roles/%{role}"
   - common
