@@ -1,4 +1,5 @@
 #!/bin/bash
+set -u
 RUBYLIB=/usr/lib/ruby
 PUPPETDIR=/var/puppet/
 runstatus=0
@@ -7,37 +8,48 @@ debug=0
 local=0
 zabbix_alert=0
 upgrade_to_base=0
+
+#
+# these are local facts being set by spawn resources.
+# We are going to look into these facts and see if we can
+# move them to hiera.
+#
 [ -f /etc/puppet/local_facter.env ] && source /etc/puppet/local_facter.env
 export FACTER_my_project=${FACTER_my_project:-beta}
-if [ -f /var/puppet/hiera/papply.env ]; then
-  source /var/puppet/hiera/papply.env
-  export FACTER_env=`my_environment`
+if [ -f /var/puppet/bin/papply.env ]; then
+  source /var/puppet/bin/papply.env
 else
   echo "Error, Missing /var/puppet/hiera/papply.env, exiting"
-fi 
+fi
 
 function usage() {
   printf "Usage: $0 [-v] [-d] [-l] [-z] [-b] \n\n-v\tVerbose\n-d\tDebug\n-l\tLocal mode\n-z\tSend alert to zabbix\n-b\tUpgrade the system to base snapshot version\n"
   exit 100
 }
 
-while getopts "bdvlz" OPTION; do 
+while getopts "e:r:bdvlz" OPTION; do
   case "${OPTION}" in
+    e)
+      export FACTER_env=$OPTARG
+      ;;
+    r)
+      export FACTER_role=$OPTARG
+      ;;
     v)
       poptions="$poptions --verbose"
       ;;
     d)
       poptions="$poptions --debug"
       ;;
-    l) 
+    l)
       local=1
       ;;
-    z) 
+    z)
       zabbix_alert=1
       ;;
     b)
       upgrade_to_base=1
-      ;;    
+      ;;
     *)
       usage
       ;;
@@ -81,5 +93,3 @@ if [ $rv_zsender -ne 0 ]; then
 elif [ $runstatus -eq 0 ]; then
    echo "`date`|INFO|Puppet apply completed successfully"
 fi
-
-
