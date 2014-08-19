@@ -1,0 +1,28 @@
+git_protocol=ENV['git_protocol'] || 'git'
+base_url = "#{git_protocol}://github.com"
+
+#
+# Right now, tempest is not treated the same as the
+# openstack modules. It will not be managed in the same
+# way b/c it cannot be installed as a package.
+#
+# NOTE: I am not a big fan of having a seperate Puppetfile
+# for it, but I didn't put a lot of thought into doing it
+# in a better way
+#
+
+mod 'stackforge/tempest',
+  :git => "#{base_url}/jiocloud/puppet-tempest",
+  :ref => 'origin/master'
+
+mod 'puppetlabs/inifile',
+  :git => "#{base_url}/puppetlabs/puppetlabs-inifile",
+  :ref => 'ab21bd3'
+
+mod 'puppetlabs/stdlib',
+  :git => "#{base_url}/puppetlabs/puppetlabs-stdlib",
+  :ref => '4.1.0'
+
+mod 'puppetlabs/vcsrepo',
+  :git => "#{base_url}/puppetlabs/puppetlabs-vcsrepo",
+  :ref => '1.1.0'
