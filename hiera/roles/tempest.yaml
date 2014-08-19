@@ -1,0 +1,44 @@
+tempest::tempest_repo_uri: 'git://github.com/openstack/tempest.git',
+tempest::tempest_clone_path: '/var/lib/tempest',
+tempest::tempest_clone_owner: 'root',
+
+tempest::setup_venv: false,
+
+# Glance image config
+
+tempest::configure_images: true,
+
+# Neutron network config
+
+tempest::configure_networks: false,
+
+# tempest.conf parameters
+
+tempest::identity_uri: 'http://10.0.2.15:5000/v2.0/',
+# non admin user
+tempest::username: demo,
+tempest::password: pandey,
+tempest::tenant_name: demo,
+# another non-admin user
+# admin user
+tempest::admin_username: admin,
+tempest::admin_password: pandey,
+tempest::admin_tenant_name: admin,
+# image information
+tempest::image_ref: 952587a8-e2f8-4e47-8102-03afd57c4f6c,
+tempest::image_ref_alt: 11143711-60b7-4856-bf9f-a110790b7ffa,
+tempest::flavor_ref: 1,
+tempest::flavor_ref_alt: 2,
+# whitebox
+# testing features that are supported
+tempest::allow_tenant_isolation: false,
+# neutron config
+# Upstream has a bad default - set it to empty string.
+# Service configuration
+tempest::cinder_available: true,
+tempest::glance_available: true,
+tempest::heat_available: false,
+tempest::horizon_available: true,
+tempest::neutron_available: false,
+tempest::nova_available: true,
+tempest::swift_available: true
