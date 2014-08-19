@@ -1,2 +1,7 @@
 ## Call jiocloud class
-class {'jiocloud':}
+
+if $::role == 'tempest' {
+  include tempest
+} else {
+  include jiocloud
+}
