@@ -67,6 +67,10 @@ def checkAll(verbose='quiet'):
       sleep(5)
       continue
   log("all nodes are sshable now")
+  ## Configure contrail vm - this is only applicable for 
+  ## vm spawned from contrail golden image
+  log("Configuring contrail node")
+  execute(configContrail,hosts='10.1.0.245')
   ## Run puppet - first run on all servers
   log("Initial execution of puppet run on storage")
   with hide('warnings'), settings(warn_only = True):
@@ -119,8 +123,6 @@ def checkAll(verbose='quiet'):
   log("Configuring All CP nodes")
   execute(configCP,hosts=env.roledefs['cp'])
 
-  log("Configuring contrail node")
-  execute(configContrail,hosts='10.1.0.245')
   execute(runPapply,hosts=nodes)
   
   log("Checking the services")
