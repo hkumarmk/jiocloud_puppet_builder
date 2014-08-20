@@ -131,7 +131,7 @@ function rebuildServers() {
  
 function destroyResources() {
   export OS_TENANT_NAME="$project"
-  nova keypair-delete $project > /dev/null ||  _fail "Kepair addition failed for $project"
+  nova keypair-delete $project > /dev/null ||  _fail "Kepair deletion failed for $project"
   pkill -9 -P $$
   lg "Deleting VMs"
   for nd in `nova list | awk '{print $2}' | grep -v "ID\|^ *$"`; do 
@@ -184,7 +184,8 @@ function _fail() {
 }
 
 function createResources() {
-  lg Kepair has not been added, doing it now
+  lg "Generate key and export it to openstack"
+  ### Generate key and export it.
   ssh-keygen -f $tmp/id_rsa -t rsa -N ''
   nova keypair-add --pub-key $tmp/id_rsa.pub $project > /dev/null ||  _fail "Kepair addition failed for $project"
 
@@ -258,36 +259,36 @@ function createResources() {
     lg Booting contrail VM
     nova boot --flavor m1.medium --image 3f855d6f-c054-4d51-add0-41a96122b13a --meta host_type=ct ct1 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.245 > /dev/null ||  _fail nova boot ct1 failed.
   else
-    nova boot --flavor m1.contrail --image ubuntu12.04 --key-name ubuntu --user-data userdata.sh --meta host_type=ct ct1 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.245 > /dev/null ||  _fail nova boot ct1 failed.
+    nova boot --flavor m1.contrail --image ubuntu12.04 --key-name $project --user-data userdata.sh --meta host_type=ct ct1 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.245 > /dev/null ||  _fail nova boot ct1 failed.
     check_boot ct1 &
   fi
   
-  nova boot --flavor m1.small --image ubuntu12.04 --key-name ubuntu --user-data userdata_lb.sh --meta host_type=lb lb1 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.5 > /dev/null ||  _fail nova boot lb1 failed
+  nova boot --flavor m1.small --image ubuntu12.04 --key-name $project --user-data userdata_lb.sh --meta host_type=lb lb1 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.5 > /dev/null ||  _fail nova boot lb1 failed
   check_boot lb1 &
-  nova boot --flavor m1.controller --image ubuntu12.04 --key-name ubuntu --user-data userdata.sh --meta host_type=db db1 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.10 > /dev/null ||  _fail nova boot db1 failed
+  nova boot --flavor m1.controller --image ubuntu12.04 --key-name $project --user-data userdata.sh --meta host_type=db db1 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.10 > /dev/null ||  _fail nova boot db1 failed
   check_boot db1 &
-  nova boot --flavor m1.storage --image ubuntu12.04 --key-name ubuntu --user-data userdata.sh --meta host_type=st st1 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.51 --nic net-id=${stg_cluster_nw_id},v4-fixed-ip=10.2.0.51 > /dev/null ||  _fail nova boot st1 failed
+  nova boot --flavor m1.storage --image ubuntu12.04 --key-name $project --user-data userdata.sh --meta host_type=st st1 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.51 --nic net-id=${stg_cluster_nw_id},v4-fixed-ip=10.2.0.51 > /dev/null ||  _fail nova boot st1 failed
  
   check_boot st1 &
-  nova boot --flavor m1.storage --image ubuntu12.04 --key-name ubuntu --user-data userdata.sh --meta host_type=st st2 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.52 --nic net-id=${stg_cluster_nw_id},v4-fixed-ip=10.2.0.52 > /dev/null ||  _fail nova boot st2 failed
+  nova boot --flavor m1.storage --image ubuntu12.04 --key-name $project --user-data userdata.sh --meta host_type=st st2 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.52 --nic net-id=${stg_cluster_nw_id},v4-fixed-ip=10.2.0.52 > /dev/null ||  _fail nova boot st2 failed
  
   check_boot st2 &
-  nova boot --flavor m1.storage --image ubuntu12.04 --key-name ubuntu --user-data userdata.sh --meta host_type=st st3 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.53 --nic net-id=${stg_cluster_nw_id},v4-fixed-ip=10.2.0.53 > /dev/null ||  _fail nova boot st3 failed
+  nova boot --flavor m1.storage --image ubuntu12.04 --key-name $project --user-data userdata.sh --meta host_type=st st3 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.53 --nic net-id=${stg_cluster_nw_id},v4-fixed-ip=10.2.0.53 > /dev/null ||  _fail nova boot st3 failed
   check_boot st3 &
-  nova boot --flavor m1.controller --image ubuntu12.04 --key-name ubuntu --user-data userdata.sh --meta host_type=oc oc1 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.11 > /dev/null ||  _fail nova boot oc1 failed
+  nova boot --flavor m1.controller --image ubuntu12.04 --key-name $project --user-data userdata.sh --meta host_type=oc oc1 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.11 > /dev/null ||  _fail nova boot oc1 failed
   check_boot oc1 &
-  nova boot --flavor m1.controller --image ubuntu12.04 --key-name ubuntu --user-data userdata.sh --meta host_type=oc oc2 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.12 > /dev/null ||  _fail nova boot oc2 failed
+  nova boot --flavor m1.controller --image ubuntu12.04 --key-name $project --user-data userdata.sh --meta host_type=oc oc2 --nic net-id=${stg_access_nw_id},v4-fixed-ip=10.1.0.12 > /dev/null ||  _fail nova boot oc2 failed
   check_boot oc2 &
 
 
   for num in `seq $num_cp`; do 
-    nova boot --flavor m1.compute --image ubuntu12.04 --key-name ubuntu --user-data userdata.sh --meta host_type=cp cp$num --nic net-id=${sdn_nw_id} --nic net-id=${stg_access_nw_id} > /dev/null ||  _fail nova boot cp$num failed
+    nova boot --flavor m1.compute --image ubuntu12.04 --key-name $project --user-data userdata.sh --meta host_type=cp cp$num --nic net-id=${sdn_nw_id} --nic net-id=${stg_access_nw_id} > /dev/null ||  _fail nova boot cp$num failed
     check_boot cp$num &
   done
 
   for num in `seq $num_st`; do
     if [ $num -gt 3 ]; then
-      nova boot --flavor m1.storage --image ubuntu12.04 --key-name ubuntu --meta host_type=st st$num --user-data userdata.sh --nic net-id=${stg_access_nw_id} --nic net-id=${stg_cluster_nw_id} > /dev/null ||  _fail nova boot $st$num failed
+      nova boot --flavor m1.storage --image ubuntu12.04 --key-name $project --meta host_type=st st$num --user-data userdata.sh --nic net-id=${stg_access_nw_id} --nic net-id=${stg_cluster_nw_id} > /dev/null ||  _fail nova boot $st$num failed
       check_boot st$num &
     fi
   done
@@ -345,7 +346,7 @@ function createResources() {
     lg Booting Management VM
     makeUserDataMgmt
     sleep 3
-    nova boot --flavor m1.small --image ubuntu12.04 --key-name ubuntu --user-data userdata_mgmt.sh --meta host_type=mgmt mgmt_vm1 --nic net-id=${stg_access_nw_id} > /dev/null ||  _fail nova boot mgmt_vm1 failed
+    nova boot --flavor m1.small --image ubuntu12.04 --key-name $project --user-data userdata_mgmt.sh --meta host_type=mgmt mgmt_vm1 --nic net-id=${stg_access_nw_id} > /dev/null ||  _fail nova boot mgmt_vm1 failed
   mgmt_vm_state=0
   failed_mgmt_vm_up=0
   num_try=0
@@ -396,7 +397,7 @@ function createResources() {
 
 ### Add /etc/hosts entry
 ## This is required as the endpoints use https
-sed -i -e "/^\s*$fip.*/{s/.*/$fip $project.jiocloud.com/;:a;n;:ba;q}" -e "$ a$fip $project.jiocloud.com" /etc/hosts
+sudo sed -i -e "/^\s*$fip.*/{s/.*/$fip $project.jiocloud.com/;:a;n;:ba;q}" -e "$ a$fip $project.jiocloud.com" /etc/hosts
 
 ### Create resources on overcloud
 createResourcesOnOverCloud
@@ -426,6 +427,7 @@ function makeUserDataMgmt() {
   all_nodes=`echo "$nova_list" |grep -vi "mgmt_vm1\|ct1" | awk -F\| '{gsub (/ */,"",$3); print $3","$7}' | sed 's/^\([a-z_A-Z0-9][a-z_A-Z0-9]*\),.*stg_access=\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/'\''\2'\''/' | awk '{ res=$0"," res } END {gsub (/,$/,"",res); printf res}'`
 
   sed -i -e "s/___CP_SERVERS_TOBE_REPLACED_Static___/$cp_nodes/" -e "s/___ST_SERVERS_TOBE_REPLACED_Static___/$st_nodes/" -e "s/___ALL_SERVERS_TOBE_REPLACED_Static___/$all_nodes/" userdata_mgmt.sh
+  sed -i -e "/___SSH_PRIVATE_KEY_Static___/r $tmp/id_rsa" -e "/___SSH_PRIVATE_KEY_Static___/d" userdata_mgmt.sh
   if [ $verbose -eq 1 ]; then
     sed -i -e "s/___PROJECT___/$project/g" -e "s/___Forward_DNS_Entries_Static___/$fwd_dns/g" -e "s/___Reverse__DNS__Entries_Static___/$rev_dns/g" -e "s/__Verbose__/1/" userdata_mgmt.sh
   else
@@ -546,8 +548,6 @@ if [ `echo $project | grep -c _` -ne 0 ]; then
   usage "Invalid tenant name \"_\" is not allowed" 
 fi   
 export tmp=`mktemp -d /tmp/selfextract.XXXXXX`
-#createResourcesOnOverCloud
-#exit 
 tar=`awk '/^__ARCHIVE_STARTS_HERE__/ {print NR + 1; exit 0; }' $0`
 tail -n+$tar $0 | tar xz -C $tmp
 pwd=`pwd`
