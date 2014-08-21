@@ -1,2 +1,3 @@
 modules/*
 resource_spawner/spawn_resources.bin
+hiera/user.yaml
