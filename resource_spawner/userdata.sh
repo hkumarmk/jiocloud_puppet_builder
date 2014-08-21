@@ -61,6 +61,8 @@ cat <<EOF > /etc/apt/sources.list
 deb [arch=amd64] $apt_repo_base_url/archive.ubuntu.com/ubuntu precise main restricted universe
 deb [arch=amd64] $apt_repo_base_url/archive.ubuntu.com/ubuntu precise-updates main restricted universe
 deb [arch=amd64] $apt_repo_base_url/apt.puppetlabs.com/ precise main dependencies
+deb [arch=amd64] $apt_repo_base_url/ppa.launchpad.net/chris-lea/fabric/ubuntu/ precise main 
+deb [arch=amd64] $apt_repo_base_url/ubuntu-cloud.archive.canonical.com/ubuntu/ precise-updates/havana main
 EOF
 rv_apt_update=1
 num_apt_update=1
