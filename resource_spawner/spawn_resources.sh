@@ -526,6 +526,7 @@ region=${region:-"P1_mum"}
 num_cp=${num_cp:-3}
 num_st=${num_st:-3}
 num_st=3
+floatingpool=${floatingpool:-'local-public-two'}
 export OS_NO_CACHE='true'
 export OS_USERNAME=$user
 export OS_TENANT_NAME='admin'
@@ -556,4 +557,3 @@ createResources
 cd $pwd
 rm -fr $tmp
 exit 0
-__ARCHIVE_STARTS_HERE__
