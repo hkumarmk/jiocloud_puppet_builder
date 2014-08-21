@@ -18,55 +18,130 @@ from time import sleep
 
 paramiko.util.log_to_file("/dev/null")
 
+### If upgrade target is not specified take the default value "target" for target snapshot
+try: env.upgrade
+except Exception:  env.upgrade =  'target'
+
+### Set default values for servers if not set in commandline
+try: env.ocservers
+except Exception:  env.ocservers =  ''
+try: env.cpservers
+except Exception:  env.cpservers =  ''
+try: env.stservers
+except Exception:  env.stservers =  ''
+try: env.lbservers
+except Exception:  env.lbservers =  ''
+try: env.dbservers
+except Exception:  env.dbservers =  ''
+
+### Set roles here
 
 env.roledefs = {
-  'oc': [ '10.1.0.11', '10.1.0.12'],
-  'cp': [___CP_SERVERS_TOBE_REPLACED___],
-  'st': [ ___ST_SERVERS_TOBE_REPLACED___],
-  'all': [___ALL_SERVERS_TOBE_REPLACED___]
+  'oc': env.ocservers.split(':'),
+  'cp': env.cpservers.split(':'),
+  'st': env.stservers.split(':'),
+  'lb': env.lbservers.split(':'),
+  'db': env.dbservers.split(':'),
+  'all': env.lbservers.split(':') + env.dbservers.split(':') + env.ocservers.split(':') + env.cpservers.split(':') + env.stservers.split(':'),
 }
 
 
-try:
-  env.upgrade
-except Exception:
-  env.upgrade =  'target'
+## This function will call from the caller/spawner script
+### from Jenkins server, which will take two arguments - 
+### host (-H) - jumphost or lb floating IP to initiate the setup
+### dir_to_copy - a directory which should have 
+#### fabfile.py - this file will be served fab runs on the jumphost/lb server on the test cloud
+#### userdata.sh - this script does basic setup and installs puppet on the systems
+#### ssh private key - this will be transferred to lb server, so that it can be used as jumphost, 
+#####                  this key will be used by fab to login to other servers
+
+## initiateSetup: initiate the new setup from caller machines usually this will be jenkins server
+### Arguments: 
+#### dir - this is path to the directory which must contain all data to be passwed to the new system
+###        This directory will be copied over to remote location and run scripts and fab from it
+### This will call fab from lb/jumphost server
+
+def initiateSetup(dir,verbose='quiet'):
+### Harish: For some reason python paramiko is not working from the machine I run, I will debug it later
+### For now not checking if the server is up
+#  log("Verifying the server is up")
+#  while not verifySshd([env.host],'ubuntu','~/ubuntu-key'):
+#    sleep(5)
+#    continue
+
+  ### Print stdout and error messages only on verbose 
+  if verbose.upper() == 'QUIET':
+    output.update({'running': False, 'stdout': False, 'stderr': False})
+
+  log("Copying the files to lb node")
+  put(dir, '~/')
+  log("Setting up the system on %s" % env.host)
+  base_dir = os.path.basename(dir)
+#  print("%s----------" % env.key_filename)
+  log("Run userdata.sh on lb node")
+  sudo("bash ~/%s/userdata.sh  -r lb" % base_dir)
+  log("Run fab from lb1 to setup the cloud: %s" % env.cloudname)
+ 
+  ## Enable output - it is required to print inner fab messages
+  output.update({'running': True, 'stdout': True, 'stderr': True})
+  run('fab -f ~ubuntu/%s/fabfile  -i ~ubuntu/.ssh/id_rsa --set cpservers=10.1.0.253:10.1.0.252,ocservers=10.1.0.11:10.1.0.12,stservers=10.1.0.51:10.1.0.52:10.1.0.53,dbservers=10.1.0.10,lbservers=10.1.0.5 setup:~ubuntu/%s/userdata.sh'  % (base_dir,base_dir))
+#  log("Verify the cloud")
+#  sudo('fab -f ~ubuntu/%s/fabfile checkAll' % dir)
 
 ##Python logger doesnt work with fab
 def log(msg):
   print str(datetime.datetime.now()) + ' ' + msg
 
-## Make a dict of host ips and names
-def getHostname(nodes=env.roledefs['all']):
-  dict_hosts={}
-  for node in nodes:
-    status,hostname = commands.getstatusoutput('host %s  10.1.0.5 | awk \'/in-addr.arpa/ {split($NF,a,"."); print a[1]}\'' % node )
-    dict_hosts[node] = hostname
-  return dict_hosts
+## This expect a dictionary of files with source -> destination format 
+## will files from source directory to destination
 
-def callhosts():
-  a = getHostname(nodes=['10.1.0.11'])
-  print a
+@parallel
+def putFiles(files={}):
+  with hide('warnings'), settings(warn_only = True):
+    for key in files:
+      put (key,files[key])
 
-def checkAll(verbose='quiet'):
-  """check all components and return on success, optional argument, 'verbose' for verbose output""" 
+## run commands parallel on specified machines
+### command - an arbiterary command
+### run_type - two values - run, sudo, to determine whether to run as current user or root
 
+@parallel
+def runCommand(cmd,run_type):
+  if run_type == 'sudo':
+    sudo(cmd)
+  elif run_type == 'run':
+    run(cmd)
+  else:
+    log("No valid runtype %s" % run_type)
+
+
+## Setup the entire system 
+### Copy userdata file  to /tmp of all systems - roldefs['all']
+### Run userdata file to do basic setup and install puppet
+### Run puppet on the systems to setup openstack and other applications
+
+def setup(script,verbose='quiet'):
+  """Setup the entire cloud system""" 
   if verbose.upper() == 'QUIET':
     output.update({'running': False, 'stdout': False, 'stderr': False})
+  log("Waiting till all servers are sshable")
+  while not verifySshd(env.roledefs['all'],'ubuntu'):
+      sleep(5)
+      continue
+  log("all nodes are sshable now")
+  log("Copy data to All except lb servers")
+  nodes_to_run_userdata =  env.roledefs['oc'] + env.roledefs['cp'] + env.roledefs['cp'] + env.roledefs['st'] +env.roledefs['db']
 
-#  rv = {'checkCephOsd': 1, 'checkCephStatus': 1, 'checkNova': 1, 'checkCinder': 1, 'getOSControllerProcs': 1 }
-  rv = {'checkCephOsd': 1, 'checkCephStatus': 1, 'checkNova': 1, 'checkCinder': 1, }
+  execute(putFiles,hosts=nodes_to_run_userdata,files= {script: '/tmp'})
+  
+  fileToRun = os.path.basename(script)
+
+  execute(runCommand,hosts=nodes_to_run_userdata,cmd="bash /tmp/%s -r oc -p http://10.1.0.5:3128" % fileToRun,run_type="sudo")
   status = 1
   timeout = 5
   initial_prun = 1
   maxAttempts = 40
   attempt = 1
-  log("Start checking the cluster")
-  log("Waiting till all servers are sshable")
-  while not verify_sshd(env.roledefs['all'],'ubuntu'):
-      sleep(5)
-      continue
-  log("all nodes are sshable now")
   ## Configure contrail vm - this is only applicable for 
   ## vm spawned from contrail golden image
   log("Configuring contrail node")
@@ -102,7 +177,7 @@ def checkAll(verbose='quiet'):
   with hide('warnings'), settings(host_string = '10.1.0.53', warn_only = True):
     st_ceph_mon = sudo ("ceph mon stat | grep st1,st2,st3")
     if st_ceph_mon.return_code != 0:
-      log("Ceph Mons are not up, fixing")
+      log("Ceph Mons are not up, fixing")
       while st_ceph_mon.return_code != 0:
         execute(runPapply,hosts=['10.1.0.53','10.1.0.52','10.1.0.51'])
         with  settings(host_string = '10.1.0.53', warn_only = True):
@@ -122,9 +197,34 @@ def checkAll(verbose='quiet'):
 
   log("Configuring All CP nodes")
   execute(configCP,hosts=env.roledefs['cp'])
-
   execute(runPapply,hosts=nodes)
-  
+
+## Make a dict of host ips and names
+def getHostname(nodes=env.roledefs['all']):
+  dict_hosts={}
+  for node in nodes:
+    status,hostname = commands.getstatusoutput('host %s  10.1.0.5 | awk \'/in-addr.arpa/ {split($NF,a,"."); print a[1]}\'' % node )
+    dict_hosts[node] = hostname
+  return dict_hosts
+
+def callhosts():
+  a = getHostname(nodes=['10.1.0.11'])
+  print a
+
+def checkAll(verbose='quiet'):
+  """check all components and return on success, optional argument, 'verbose' for verbose output""" 
+
+  if verbose.upper() == 'QUIET':
+    output.update({'running': False, 'stdout': False, 'stderr': False})
+
+#  rv = {'checkCephOsd': 1, 'checkCephStatus': 1, 'checkNova': 1, 'checkCinder': 1, 'getOSControllerProcs': 1 }
+  rv = {'checkCephOsd': 1, 'checkCephStatus': 1, 'checkNova': 1, 'checkCinder': 1, }
+  status = 1
+  timeout = 5
+  initial_prun = 1
+  maxAttempts = 40
+  attempt = 1
+  log("Start checking the cluster")
   log("Checking the services")
   success = 0
   while ( attempt < maxAttempts ):
@@ -159,7 +259,7 @@ def reduceCloudinitWaitTime():
     sudo('sed -i "s/long=[0-9]*/long=10/g" /etc/init/cloud-init-nonet.conf')
 
 def waitForSSH():
-  while not verify_sshd([env.host],'ubuntu'):
+  while not verifySshd([env.host],'ubuntu'):
     sleep(5)
     continue
 
@@ -244,7 +344,7 @@ def rebootNode():
     log('Reboot issued; Waiting for the node (%s) to go down...' % env.host)
     wait_until_host_down(wait=300, host=env.host)
     log ('Node (%s) is down... Waiting for node to come back' %   env.host)
-    while not verify_sshd([env.host],'ubuntu'):
+    while not verifySshd([env.host],'ubuntu'):
       sleep(5)
       continue
     log("All nodes are sshable now")
@@ -273,7 +373,7 @@ def runPapply(num_exec=1):
         sudo('dpkg --configure -a')
       execute(rebootIfNeeded,hosts=env.host)
       attempt += 1
-      while not verify_sshd([env.host],'ubuntu'):
+      while not verifySshd([env.host],'ubuntu'):
         sleep(5)
         continue
   log("Done puppet apply on %s" % env.host)
@@ -315,6 +415,7 @@ def checkSvnUpdated():
           log (node + "svn update Failed")
           return 1
   return 0
+  
 
 def checkAptUpdated():
   """check apt get update status"""
@@ -391,7 +492,8 @@ def wait_until_host_down(wait=120, host=None):
   print 'Timeout while waiting for host to shut down.'
   sys.exit(1)
 
-def verify_sshd(hostlist=[env.host], user='ubuntu',pkey_file='/home/ubuntu/.ssh/id_rsa'):
+
+def verifySshd(hostlist=[env.host], user='ubuntu',pkey_file='/home/ubuntu/.ssh/id_rsa'):
   rv_ssh = True
   for node in hostlist:
     try:
@@ -400,11 +502,12 @@ def verify_sshd(hostlist=[env.host], user='ubuntu',pkey_file='/home/ubuntu/.ssh/
       client.set_missing_host_key_policy(
         paramiko.AutoAddPolicy())
       client.connect(node,username=user,password='',pkey=private_key)
+      client.close()
     except Exception:
       log("Waiting for %s to be sshable" % node)
       rv_ssh = False
-    client.close()
   return rv_ssh
+
 
 #@parallel
 def getOSControllerProcs():
