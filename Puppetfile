@@ -108,6 +108,10 @@ mod 'jiocloud/openstack',
   :git => "#{base_url}/jiocloud/puppet-openstack",
   :ref => 'origin/master'
 
+mod 'stackforge/openstack_extras',
+  :git => "#{base_url}/bodepd/puppet-openstack_extras",
+  :ref => 'origin/master'
+
 mod 'puppetlabs/rabbitmq',
   :git => "#{base_url}/puppetlabs/puppetlabs-rabbitmq",
   :ref => '4.0.0'
@@ -140,9 +144,17 @@ mod 'duritong/sysctl',
   :git => "#{base_url}/duritong/puppet-sysctl",
   :ref => '4a46338'
 
+mod 'stackforge/tempest',
+  :git => "#{base_url}/jiocloud/puppet-tempest",
+  :ref => 'origin/master'
+
 mod 'saz/timezone',
   :git => "#{base_url}/saz/puppet-timezone",
   :ref => 'v2.0.0'
+
+mod 'puppetlabs/vcsrepo',
+  :git => "#{base_url}/puppetlabs/puppetlabs-vcsrepo",
+  :ref => '1.1.0'
 
 mod 'viirya/zookeeper',
   :git => "#{base_url}/viirya/puppet-zookeeper",
