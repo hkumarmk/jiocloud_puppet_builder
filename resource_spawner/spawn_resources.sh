@@ -478,8 +478,6 @@ if [ `echo $project | grep -c _` -ne 0 ]; then
   usage "Invalid tenant name \"_\" is not allowed"
 fi
 export tmp=`mktemp -d /tmp/selfextract.XXXXXX`
-tar=`awk '/^__ARCHIVE_STARTS_HERE__/ {print NR + 1; exit 0; }' $0`
-tail -n+$tar $0 | tar xz -C $tmp
 pwd=`pwd`
 setupPuppet
 cd $tmp
