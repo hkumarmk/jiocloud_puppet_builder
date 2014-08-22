@@ -274,7 +274,7 @@ function createResources() {
 
 
   for num in `seq $num_cp`; do
-    nova boot --flavor m1.compute --image ubuntu12.04 --key-name $project  --meta host_type=cp "cp${num}_${project}" --nic net-id=${sdn_nw_id} --nic net-id=${stg_access_nw_id} > /dev/null ||  _fail nova boot "cp${num}_${project}" failed
+    nova boot --flavor m1.compute --image ubuntu12.04 --key-name $project  --meta host_type=cp "cp${num}_${project}" --nic net-id=${stg_access_nw_id} --nic net-id=${sdn_nw_id}> /dev/null ||  _fail nova boot "cp${num}_${project}" failed
     check_boot "cp${num}_${project}" &
   done
 
