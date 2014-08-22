@@ -101,13 +101,6 @@ coredump_dir /var/spool/squid3
 EOF
   service squid3 restart
 
-  mkdir -p ~ubuntu/.ssh
-  chown ubuntu.ubuntu ~ubuntu/.ssh
-  chmod 700 ~ubuntu/.ssh
-
-  chown ubuntu.ubuntu ~ubuntu/.ssh/id_rsa
-  chmod 600 ~ubuntu/.ssh/id_rsa
-
   cat <<EOF > /etc/haproxy/haproxy.cfg
 global
         log 127.0.0.1   local0 notice
