@@ -120,7 +120,7 @@ function destroyResources() {
   lg "Deleting the Networks"
   neutron net-delete "stg_access_${project}" || _retry 1 neutron net-delete "stg_access_${project}"
   neutron net-delete "stg_cluster_${project}" || _retry 1 neutron net-delete "stg_cluster_${project}"
-  neutron net-delete "sdn__${project}" || _retry neutron 1 net-delete "sdn_${project}"
+  neutron net-delete "sdn_${project}" || _retry neutron 1 net-delete "sdn_${project}"
   fip_id=`neutron floatingip-list | grep "[0-9\.][0-9\.]" | awk '{print $2}'`
   if [ `echo $fip_id | grep -c "[a-z]"` -ne 0 ]; then
     neutron floatingip-disassociate $fip_id || _retry 1 neutron floatingip-disassociate $fip_id
