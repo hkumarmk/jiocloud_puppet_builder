@@ -121,11 +121,18 @@ function destroyResources() {
   neutron net-delete "stg_access_${project}" || _retry 1 neutron net-delete "stg_access_${project}"
   neutron net-delete "stg_cluster_${project}" || _retry 1 neutron net-delete "stg_cluster_${project}"
   neutron net-delete "sdn_${project}" || _retry neutron 1 net-delete "sdn_${project}"
-  fip_id=`neutron floatingip-list | grep "[0-9\.][0-9\.]" | awk '{print $2}'`
-  if [ `echo $fip_id | grep -c "[a-z]"` -ne 0 ]; then
-    neutron floatingip-disassociate $fip_id || _retry 1 neutron floatingip-disassociate $fip_id
-    neutron floatingip-delete $fip_id || _retry 1 neutron floatingip-delete $fip_id
-  fi
+
+  #
+  # Delete entries that do not have an assigned port. We can assume that
+  # this will delete the right floating ip address, b/c it's subnet and
+  # VM have already been deleted, so the ip address should not have a port.
+  for i in `neutron floatingip-list | grep "[0-9\.][0-9\.]" | awk -F'|' '{gsub(/^[ \t]+/, "", $2); gsub(/[ \t]+$/, "", $2); gsub(/^[ \t]+/, "", $3); gsub(/[ \t]+$/, "",$3); print $2","$3}' `; do
+    if [ -z `echo $i | awk -F',' '{print $2}'` ]; then
+      fip_id=`echo $i | awk -F',' '{print $1}'`
+      neutron floatingip-delete $fip_id || _retry 1 neutron floatingip-delete $fip_id
+    fi
+  done
+
   if [ ${create_ipam:-0} -eq 1 ]; then
     neutron ipam-delete ipam1 || _retry 1 neutron ipam-delete ipam1
   fi
@@ -342,7 +349,8 @@ function createResources() {
   fi
   fip_id=`neutron floatingip-list  | grep $fip | awk -F'|' '{print $2}'`
   lb_addr=`nova show ${lb1_name} | grep ${stg_access_net} | awk -F'|' '{print $3}'`
-  lb1_port_id=`neutron port-list | grep "$(echo $lb_addr | awk '{print $1}')\"" | awk '{print $2}'`
+  subnet_id=`neutron net-show ${stg_access_net} | grep subnets | awk -F' ' '{print $4}'`
+  lb1_port_id=`neutron port-list | grep ${subnet_id} | grep "$(echo $lb_addr | awk '{print $1}')\"" | awk '{print $2}'`
   lg Associating floating IP $fip to lb1
   neutron floatingip-associate $fip_id $lb1_port_id > /dev/null ||  _fail floatingip associate $fip failed
 
