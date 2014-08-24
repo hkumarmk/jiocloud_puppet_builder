@@ -178,10 +178,12 @@ function setupPuppet() {
 ### Finally fab will transfer this $tmp to cloud systems
 
 function setupTmpDir() {
-  puppet_builder_location="`dirname $0 `/../"
+  relative_path="`dirname $0`/../"
+  puppet_builder_location=`readlink -f $relative_path`
   [ -d $puppet_builder_location/tmp ] || mkdir $puppet_builder_location/tmp
   export tmp=`mktemp -d $puppet_builder_location/tmp/resource_spawner.XXXXXX`
-  cp -r $puppet_builder_location/bin  $puppet_builder_location/hiera  $puppet_builder_location/manifests  $puppet_builder_location/Puppetfile  $puppet_builder_location/resource_spawner $tmp
+  mkdir $tmp/jiocloud_puppet_builder
+  cp -r $puppet_builder_location/bin  $puppet_builder_location/hiera  $puppet_builder_location/manifests  $puppet_builder_location/Puppetfile  $puppet_builder_location/resource_spawner $tmp/jiocloud_puppet_builder
 }
 
 
