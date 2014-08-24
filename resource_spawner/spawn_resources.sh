@@ -161,14 +161,27 @@ function _fail() {
 
 # download Puppet content
 function setupPuppet() {
-  pushd ../
-  apt-get install -y ruby1.9.1 rubygems
+  pushd $tmp
   if ! gem list librarian-puppet-simple | grep librarian-puppet-simple ; then
-    gem install --no-ri --no-rdoc librarian-puppet-simple
+    sudo apt-get install -y ruby1.9.1 rubygems
+    sudo gem install --no-ri --no-rdoc librarian-puppet-simple
   fi
   librarian-puppet install
   popd
 }
+
+### This will create temporary directory
+### Copy all files to be moved to the cloud to tempoarry directory
+### $tmp will be exported so other functions can push the files to this directory
+### Finally fab will transfer this $tmp to cloud systems
+
+function setupTmpDir() {
+  puppet_builder_location="`dirname $0 `/../"
+  [ -d $puppet_builder_location/tmp ] || mkdir $puppet_builder_location/tmp
+  export tmp=`mktemp -d $puppet_builder_location/tmp/resource_spawner.XXXXXX`
+  cp -r $puppet_builder_location/bin  $puppet_builder_location/hiera  $puppet_builder_location/manifests  $puppet_builder_location/Puppetfile  $puppet_builder_location/resource_spawner $tmp
+}
+
 
 function setupHiera() {
   pushd ../
@@ -485,10 +498,16 @@ fi
 if [ `echo $project | grep -c _` -ne 0 ]; then
   usage "Invalid tenant name \"_\" is not allowed"
 fi
-export tmp=`mktemp -d /tmp/selfextract.XXXXXX`
+
+### git_protocol - this can be a configuration/argument
+export git_protocol=${git_protocol:-"https"}
+
+
+## setupTmpDir: Setup $tmp - temp directory and copy fabfile and userdata to that directory
+setupTmpDir
+
 pwd=`pwd`
 setupPuppet
-cd $tmp
 createResources
 cd $pwd
 rm -fr $tmp
