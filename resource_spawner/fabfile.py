@@ -138,7 +138,7 @@ def getToken(username, password, tenantname, keystoneurl):
         if status_code == 200:
             return response
         else:
-            print response.getvalue()
+            log(response.getvalue())
             response.close()
             response = cStringIO.StringIO()
             response.write("NULL")
@@ -164,7 +164,7 @@ def getVmList(token, nova_endpoint):
         if status_code == 200:
             return response
         else:
-            print response.getvalue()
+            log(response.getvalue())
             response.close()
             response = cStringIO.StringIO()
             response.write("NULL")
@@ -178,13 +178,8 @@ def getVmList(token, nova_endpoint):
 
 
 ##This Function will create a yaml file which will be having hostname and ipaddress 
-def createResourceYaml(username, password, tenant_name, auth_url, project_name):
-    cp = {"name": "cp"}
-    oc = {"name": "oc"}
-    st = {"name": "st"}
-    db = {"name": "db"}
-    ct = {"name": "ct"}
-    server_set = [cp, oc, st, ct, db]
+def createResourceYaml(username, password, tenant_name, auth_url, project_name, file_path):
+    nodes = {}
     DataFound = getToken(username, password, tenant_name, auth_url)
     if DataFound.getvalue() != "NULL":
         datajson = json.loads(DataFound.getvalue())
@@ -200,25 +195,25 @@ def createResourceYaml(username, password, tenant_name, auth_url, project_name):
                 storage_access = "stg_access_%s" % project_name
                 try:
                     if split_name[1] == project_name:
-                        for vm_type in server_set:
-                            match_name = "^%s\d*" % vm_type.get("name")
-                            if re.match(match_name, split_name[0]):
-                                vm_type.update({str(split_name[0]):
-                                               str(vm['addresses']
-                                                [storage_access][0]['addr'])})
+                        vm_meta = vm['metadata']['host_type']
+                        if nodes.has_key(vm_meta):
+                            nodes[vm_meta].update({str(split_name[0]):
+                                          str(vm['addresses']
+                                          [storage_access][0]['addr'])})
+                        else:
+                            nodes.update({str(vm_meta):{str(split_name[0]):
+                                                   str(vm['addresses']
+                                                   [storage_access][0]['addr'])}})
                 except:
-                    print "Variable Not Initialized"
-            for vms in server_set:
-                vms.pop("name")
-            allcp = {"cp": cp, "oc": oc, "db": db, "ct": ct, "st": st}
-            nodes = {"nodes": allcp}
-            print yaml.dump(nodes, default_flow_style=False)
-            with open('/tmp/data.yml', 'w') as outfile:
-                outfile.write(yaml.dump(nodes, default_flow_style=True))
+                    log("Variable Not Initialized")
+            wtYaml(nodes, file_path, True)
+            return 0
         else:
-                print "Nova api call failed"
+            log("Nova api call failed")
+            return 100
     else:
-            print "Keystone Api call failed"
+        log("Keystone Api call failed")
+        return 100
 
 
 ## This expect a dictionary of files with source -> destination format 
