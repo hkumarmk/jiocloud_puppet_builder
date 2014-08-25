@@ -46,45 +46,45 @@ env.roledefs = {
 }
 
 
-## This function will call from the caller/spawner script
-### from Jenkins server, which will take two arguments - 
-### host (-H) - jumphost or lb floating IP to initiate the setup
-### dir_to_copy - a directory which should have 
-#### fabfile.py - this file will be served fab runs on the jumphost/lb server on the test cloud
-#### userdata.sh - this script does basic setup and installs puppet on the systems
-#### ssh private key - this will be transferred to lb server, so that it can be used as jumphost, 
-#####                  this key will be used by fab to login to other servers
-
 ## initiateSetup: initiate the new setup from caller machines usually this will be jenkins server
 ### Arguments: 
 #### dir - this is path to the directory which must contain all data to be passwed to the new system
 ###        This directory will be copied over to remote location and run scripts and fab from it
+#### fabfile.py - this file will be served fab runs on the jumphost/lb server on the test cloud
+#### userdata.sh - this script does basic setup and installs puppet on the systems
+#### ssh private key - this will be transferred to lb server, so that it can be used as jumphost, 
+#####                  this key will be used by fab to login to other servers
 ### This will call fab from lb/jumphost server
+## Example: fab -f fabfile  -i /tmp/resource_spawner.mmlmit/id_rsa -u ubuntu -H 10.135.97.125 --set cpservers=10.1.0.253:10.1.0.252,ocservers=10.1.0.11:10.1.0.12,stservers=10.1.0.51:10.1.0.52:10.1.0.53,dbservers=10.1.0.10,lbservers=10.1.0.5,cloudname=harish1112 initiateSetup:dir=/tmp/resource_spawner.mmlmit,verbose=verbose
 
-def initiateSetup(dir,verbose='quiet'):
-### Harish: For some reason python paramiko is not working from the machine I run, I will debug it later
-### For now not checking if the server is up
-#  log("Verifying the server is up")
-#  while not verifySshd([env.host],'ubuntu','~/ubuntu-key'):
-#    sleep(5)
-#    continue
-
+def initiateSetup(dir,verbose='no'):
   ### Print stdout and error messages only on verbose 
-  if verbose.upper() == 'QUIET':
+  if verbose.upper() == 'NO':
     output.update({'running': False, 'stdout': False, 'stderr': False})
 
   log("Copying the files to lb node")
-  put(dir, '~/')
+  ## Make a tar of the directory and send to remote
+  os.system('cp fabfile.py %s/jiocloud_puppet_builder/resource_spawner; cd %s/..; tar zcf  %s.tar.gz %s' % (dir,dir,dir,os.path.basename(dir)))
+
+  ## Copy files to lb
+  execute(putFiles,hosts=env.host,files = {dir + ".tar.gz": '/tmp'})
+
+  ### Untar and copy fab file and ssh private key and puppet code to lb
+  run('tar -C %s -zxf %s.tar.gz; cp -r %s/jiocloud_puppet_builder/resource_spawner/fabfile.py ~/; cp -f %s/id_rsa ~/.ssh' % (os.path.dirname(dir),dir,dir,dir))
+  sudo ('cp -r %s/jiocloud_puppet_builder /var/puppet' % dir) 
+
   log("Setting up the system on %s" % env.host)
   base_dir = os.path.basename(dir)
-#  print("%s----------" % env.key_filename)
+
   log("Run userdata.sh on lb node")
-  sudo("bash ~/%s/userdata.sh  -r lb" % base_dir)
+  sudo("bash %s/jiocloud_puppet_builder/resource_spawner/userdata.sh  -r lb" % dir)
+
   log("Run fab from lb1 to setup the cloud: %s" % env.cloudname)
- 
+
   ## Enable output - it is required to print inner fab messages
   output.update({'running': True, 'stdout': True, 'stderr': True})
-  run('fab -f ~ubuntu/%s/fabfile  -i ~ubuntu/.ssh/id_rsa --set cpservers=10.1.0.253:10.1.0.252,ocservers=10.1.0.11:10.1.0.12,stservers=10.1.0.51:10.1.0.52:10.1.0.53,dbservers=10.1.0.10,lbservers=10.1.0.5 setup:~ubuntu/%s/userdata.sh'  % (base_dir,base_dir))
+
+  run('fab -f ~/fabfile  -i ~ubuntu/.ssh/id_rsa --set cpservers=%s,ocservers=%s,stservers=%s,dbservers=%s,lbservers=%s setup:%s,verbose:%s,verify=%s'  % (env.cpservers,env.ocservers,env.stservers,env.dbservers,env.lbservers, dir,verbose,False))
 #  log("Verify the cloud")
 #  sudo('fab -f ~ubuntu/%s/fabfile checkAll' % dir)
 
@@ -96,10 +96,16 @@ def log(msg):
 ## will files from source directory to destination
 
 @parallel
-def putFiles(files={}):
-  with hide('warnings'), settings(warn_only = True):
+def putFiles(files,run_type=run):
+#  with hide('warnings'), settings(warn_only = True):
     for key in files:
-      put (key,files[key])
+      print "%s -> %s" % (key,files[key])
+      ## Make parent directory
+      run_type('mkdir -p %s' % files[key])
+      if run_type == sudo:
+        put (key,files[key],use_sudo=True)
+      else:
+        put(key,files[key])
 
 ## run commands parallel on specified machines
 ### command - an arbiterary command
@@ -120,9 +126,11 @@ def runCommand(cmd,run_type):
 ### Run userdata file to do basic setup and install puppet
 ### Run puppet on the systems to setup openstack and other applications
 
-def setup(script,verbose='quiet'):
+def setup(dir,verbose='no',verify=False):
   """Setup the entire cloud system""" 
-  if verbose.upper() == 'QUIET':
+  timeout = 5
+  maxAttempts = 40
+  if verbose.upper() == 'NO':
     output.update({'running': False, 'stdout': False, 'stderr': False})
   log("Waiting till all servers are sshable")
   while not verifySshd(env.roledefs['all'],'ubuntu'):
@@ -130,17 +138,22 @@ def setup(script,verbose='quiet'):
       continue
   log("all nodes are sshable now")
   log("Copy data to All except lb servers")
-  nodes_to_run_userdata =  env.roledefs['oc'] + env.roledefs['cp'] + env.roledefs['cp'] + env.roledefs['st'] +env.roledefs['db']
+  nodes_to_run_userdata =  env.roledefs['oc'] + env.roledefs['cp'] + env.roledefs['cp'] + env.roledefs['st'] + env.roledefs['db']
 
-  execute(putFiles,hosts=nodes_to_run_userdata,files= {script: '/tmp'})
-  
-  fileToRun = os.path.basename(script)
+  ## Make tar
+  log("Making tar")
+  os.system('cd %s/..; tar zcf  %s.tar.gz %s' % (dir,dir,os.path.basename(dir)))
+  ## Copy the tar
+  log("Copy tar files")
+  execute(putFiles,hosts=nodes_to_run_userdata,files = {dir + ".tar.gz": '/tmp'})
 
-  execute(runCommand,hosts=nodes_to_run_userdata,cmd="bash /tmp/%s -r oc -p http://10.1.0.5:3128" % fileToRun,run_type="sudo")
+  log("Running userdata script on all servers")
+  ## Untar, copy puppet files, run userdata
+  command_to_run='tar -C %s -zxf %s.tar.gz; cp -r %s/jiocloud_puppet_builder  /var/puppet/; bash %s/jiocloud_puppet_builder/resource_spawner/userdata.sh -r non-lb -p http://%s:3128' % (os.path.dirname(dir),dir,dir,dir,env.roledefs['lb'][0])
+
+  execute(runCommand,hosts=nodes_to_run_userdata,cmd=command_to_run,run_type="sudo")
+
   status = 1
-  timeout = 5
-  initial_prun = 1
-  maxAttempts = 40
   attempt = 1
   ## Configure contrail vm - this is only applicable for 
   ## vm spawned from contrail golden image
@@ -158,7 +171,6 @@ def setup(script,verbose='quiet'):
   log("Running papply on LB and db nodes")
   with hide('warnings'), settings(warn_only = True):
     execute(runPapply,hosts=['10.1.0.5','10.1.0.10','10.1.0.53','10.1.0.52','10.1.0.51'] ) 
-#    execute(runPapply,hosts=['10.1.0.5','10.1.0.10']) 
 
   ## Sync the time initially to avoid ntp to take longer to sync te clocks.
     log("Executing ntpdate for initial time sync")
@@ -177,7 +189,7 @@ def setup(script,verbose='quiet'):
   with hide('warnings'), settings(host_string = '10.1.0.53', warn_only = True):
     st_ceph_mon = sudo ("ceph mon stat | grep st1,st2,st3")
     if st_ceph_mon.return_code != 0:
-      log("Ceph Mons are not up, fixing")
+      log("Ceph Mons are not up, fixing")
       while st_ceph_mon.return_code != 0:
         execute(runPapply,hosts=['10.1.0.53','10.1.0.52','10.1.0.51'])
         with  settings(host_string = '10.1.0.53', warn_only = True):
@@ -198,23 +210,14 @@ def setup(script,verbose='quiet'):
   log("Configuring All CP nodes")
   execute(configCP,hosts=env.roledefs['cp'])
   execute(runPapply,hosts=nodes)
+  if verify == True:
+    execute(checkAll,verbose=verbose)
 
-## Make a dict of host ips and names
-def getHostname(nodes=env.roledefs['all']):
-  dict_hosts={}
-  for node in nodes:
-    status,hostname = commands.getstatusoutput('host %s  10.1.0.5 | awk \'/in-addr.arpa/ {split($NF,a,"."); print a[1]}\'' % node )
-    dict_hosts[node] = hostname
-  return dict_hosts
-
-def callhosts():
-  a = getHostname(nodes=['10.1.0.11'])
-  print a
-
-def checkAll(verbose='quiet'):
+### Verify the services are up and running.
+def checkAll(verbose='no'):
   """check all components and return on success, optional argument, 'verbose' for verbose output""" 
 
-  if verbose.upper() == 'QUIET':
+  if verbose.upper() == 'NO':
     output.update({'running': False, 'stdout': False, 'stderr': False})
 
 #  rv = {'checkCephOsd': 1, 'checkCephStatus': 1, 'checkNova': 1, 'checkCinder': 1, 'getOSControllerProcs': 1 }
@@ -250,9 +253,6 @@ def checkAll(verbose='quiet'):
     log("Something failed, exiting")
     return 100
 
-#    if test_type == 'upgrade':
-#      test_type = 'undef'
-#      checkAll()
 
 @parallel
 def reduceCloudinitWaitTime():
@@ -496,6 +496,7 @@ def wait_until_host_down(wait=120, host=None):
 def verifySshd(hostlist=[env.host], user='ubuntu',pkey_file='/home/ubuntu/.ssh/id_rsa'):
   rv_ssh = True
   for node in hostlist:
+    log("Trying %s" % node)
     try:
       private_key = paramiko.RSAKey.from_private_key_file(pkey_file)
       client = paramiko.SSHClient()
