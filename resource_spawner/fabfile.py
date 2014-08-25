@@ -45,6 +45,30 @@ env.roledefs = {
   'all': env.lbservers.split(':') + env.dbservers.split(':') + env.ocservers.split(':') + env.cpservers.split(':') + env.stservers.split(':'),
 }
 
+## rdYaml: Read yaml from a file and return a dict object
+## Arguments:
+### file: file path to read
+## Return: python dict object
+
+def rdYaml(file_path):
+  fs = file(file_path,'r')
+  output =  yaml.load(fs)
+  return output
+
+## wtYaml: take a python object and write to provided file.
+## Arguments:
+## data: python dictionary object
+## file_path: file path
+## append: True or False whether to append existing the yaml file or not
+
+def wtYaml(data,file_path,append=False):
+  if append == False:
+    fs = file(file_path,'w')
+  else:
+    fs = file(file_path,'a')
+
+  yaml.dump(data,fs)
+
 
 ## initiateSetup: initiate the new setup from caller machines usually this will be jenkins server
 ### Arguments: 
