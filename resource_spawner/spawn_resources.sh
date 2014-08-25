@@ -113,7 +113,7 @@ function destroyResources() {
   lb_addr=`nova show lb1_${project} | grep stg_access_${project} | awk -F'|' '{print $3}'`
   subnet_id=`neutron net-show stg_access_${project} | grep subnets | awk -F' ' '{print $4}'`
   lb1_port_id=`neutron port-list | grep ${subnet_id} | grep "$(echo $lb_addr | awk '{print $1}')\"" | awk '{print $2}'`
-  fip_id=`neutron floatingip-list | grep ${lb1_port_id}`
+  fip_id=`neutron floatingip-list | grep ${lb1_port_id} | awk -F'|' '{print $2}'`
   neutron floatingip-disassociate $fip_id || _retry 1 neutron floatingip-disassociate $fip_id
   neutron floatingip-delete $fip_id || _retry 1 neutron floatingip-delete $fip_id
 
