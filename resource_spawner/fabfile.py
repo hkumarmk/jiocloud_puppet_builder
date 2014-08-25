@@ -7,7 +7,10 @@ import datetime
 import subprocess
 import paramiko
 import commands
-
+import json
+import pycurl
+import cStringIO
+import yaml
 
 
 from fabric.api import env,parallel, roles, run, settings, sudo, execute,hide
@@ -91,6 +94,108 @@ def initiateSetup(dir,verbose='quiet'):
 ##Python logger doesnt work with fab
 def log(msg):
   print str(datetime.datetime.now()) + ' ' + msg
+
+##This Function to get the token from keystone 
+##This Function will return the keystone response in json 
+def getToken(username, password, tenantname, keystoneurl):
+    postData = '{"auth": {"tenantName": "%s",\
+        "passwordCredentials":{"username":"%s", "password": "%s"}\
+        }}' % (tenantname, username, password)
+    response = cStringIO.StringIO()
+    try:
+        c = pycurl.Curl()
+        c.setopt(pycurl.URL, keystoneurl)
+        c.setopt(pycurl.HTTPHEADER, ['Content-Type:application/json'])
+        c.setopt(pycurl.POST, 1)
+        c.setopt(pycurl.POSTFIELDS, postData)
+        c.setopt(c.WRITEFUNCTION, response.write)
+        c.perform()
+        status_code = c.getinfo(pycurl.HTTP_CODE)
+        if status_code == 200:
+            return response
+        else:
+            print response.getvalue()
+            response.close()
+            response = cStringIO.StringIO()
+            response.write("NULL")
+            return response
+    except Exception, err:
+        print Exception, err
+        response.close()
+        response = cStringIO.StringIO()
+        response.write("NULL")
+        return response
+
+##This function will return vm list in json format
+def getVmList(token, nova_endpoint):
+    response = cStringIO.StringIO()
+    xauth = str("X-Auth-Token: %s" % token)
+    try:
+        c = pycurl.Curl()
+        c.setopt(pycurl.URL, nova_endpoint)
+        c.setopt(pycurl.HTTPHEADER, [xauth])
+        c.setopt(c.WRITEFUNCTION, response.write)
+        c.perform()
+        status_code = c.getinfo(pycurl.HTTP_CODE)
+        if status_code == 200:
+            return response
+        else:
+            print response.getvalue()
+            response.close()
+            response = cStringIO.StringIO()
+            response.write("NULL")
+            return response
+    except Exception, err:
+        print Exception, err
+        response.close()
+        response = cStringIO.StringIO()
+        response.write("NULL")
+        return response
+
+
+##This Function will create a yaml file which will be having hostname and ipaddress 
+def createResourceYaml(username, password, tenant_name, auth_url, project_name):
+    cp = {"name": "cp"}
+    oc = {"name": "oc"}
+    st = {"name": "st"}
+    db = {"name": "db"}
+    ct = {"name": "ct"}
+    server_set = [cp, oc, st, ct, db]
+    DataFound = getToken(username, password, tenant_name, auth_url)
+    if DataFound.getvalue() != "NULL":
+        datajson = json.loads(DataFound.getvalue())
+        token = datajson['access']['token']['id']
+        nova_endpoint = str(datajson['access']['serviceCatalog']
+                            [0]['endpoints'][0]['publicURL']+"/servers/detail")
+        DataNova = getVmList(token, nova_endpoint)
+        if DataNova.getvalue() != "NULL":
+            data_nova = json.loads(DataNova.getvalue())
+            for vm in data_nova['servers']:
+                name_vm = vm['name']
+                split_name = name_vm.split("_")
+                storage_access = "stg_access_%s" % project_name
+                try:
+                    if split_name[1] == project_name:
+                        for vm_type in server_set:
+                            match_name = "^%s\d*" % vm_type.get("name")
+                            if re.match(match_name, split_name[0]):
+                                vm_type.update({str(split_name[0]):
+                                               str(vm['addresses']
+                                                [storage_access][0]['addr'])})
+                except:
+                    print "Variable Not Initialized"
+            for vms in server_set:
+                vms.pop("name")
+            allcp = {"cp": cp, "oc": oc, "db": db, "ct": ct, "st": st}
+            nodes = {"nodes": allcp}
+            print yaml.dump(nodes, default_flow_style=False)
+            with open('/tmp/data.yml', 'w') as outfile:
+                outfile.write(yaml.dump(nodes, default_flow_style=True))
+        else:
+                print "Nova api call failed"
+    else:
+            print "Keystone Api call failed"
+
 
 ## This expect a dictionary of files with source -> destination format 
 ## will files from source directory to destination
