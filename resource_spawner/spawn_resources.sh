@@ -105,6 +105,18 @@ function rebuildServers() {
 
 function destroyResources() {
   export OS_TENANT_NAME="$tenant"
+  #
+  # Disassociate and delete the ip address. We need to do this first
+  # so that we can use the subnet to ensure that we delete the floating
+  # ip from the correct port
+  #
+  lb_addr=`nova show lb1_${project} | grep stg_access_${project} | awk -F'|' '{print $3}'`
+  subnet_id=`neutron net-show stg_access_${project} | grep subnets | awk -F' ' '{print $4}'`
+  lb1_port_id=`neutron port-list | grep ${subnet_id} | grep "$(echo $lb_addr | awk '{print $1}')\"" | awk '{print $2}'`
+  fip_id=`neutron floatingip-list | grep ${lb1_port_id}`
+  neutron floatingip-disassociate $fip_id || _retry 1 neutron floatingip-disassociate $fip_id
+  neutron floatingip-delete $fip_id || _retry 1 neutron floatingip-delete $fip_id
+
   nova keypair-delete $project > /dev/null ||  _fail "Kepair deletion failed for $project"
   pkill -9 -P $$
   lg "Deleting VMs"
@@ -122,16 +134,6 @@ function destroyResources() {
   neutron net-delete "stg_cluster_${project}" || _retry 1 neutron net-delete "stg_cluster_${project}"
   neutron net-delete "sdn_${project}" || _retry neutron 1 net-delete "sdn_${project}"
 
-  #
-  # Delete entries that do not have an assigned port. We can assume that
-  # this will delete the right floating ip address, b/c it's subnet and
-  # VM have already been deleted, so the ip address should not have a port.
-  for i in `neutron floatingip-list | grep "[0-9\.][0-9\.]" | awk -F'|' '{gsub(/^[ \t]+/, "", $2); gsub(/[ \t]+$/, "", $2); gsub(/^[ \t]+/, "", $3); gsub(/[ \t]+$/, "",$3); print $2","$3}' `; do
-    if [ -z `echo $i | awk -F',' '{print $2}'` ]; then
-      fip_id=`echo $i | awk -F',' '{print $1}'`
-      neutron floatingip-delete $fip_id || _retry 1 neutron floatingip-delete $fip_id
-    fi
-  done
 
   if [ ${create_ipam:-0} -eq 1 ]; then
     neutron ipam-delete ipam1 || _retry 1 neutron ipam-delete ipam1
