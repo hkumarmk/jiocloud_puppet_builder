@@ -91,27 +91,27 @@ def initiateSetup(dir,verbose='no'):
 
   log("Copying the files to lb node")
   ## Make a tar of the directory and send to remote
-  os.system('cp fabfile.py %s/jiocloud_puppet_builder/resource_spawner; cd %s/..; tar zcf  %s.tar.gz %s' % (dir,dir,dir,os.path.basename(dir)))
+  base_dir=os.path.basename(dir)
+  os.system('cd %s; tar zcf  %s.tar.gz %s' % (os.path.dirname(dir),base_dir,base_dir))
 
   ## Copy files to lb
   execute(putFiles,hosts=env.host,files = {dir + ".tar.gz": '/tmp'})
 
   ### Untar and copy fab file and ssh private key and puppet code to lb
-  run('tar -C %s -zxf %s.tar.gz; cp -r %s/jiocloud_puppet_builder/resource_spawner/fabfile.py ~/; cp -f %s/id_rsa ~/.ssh' % (os.path.dirname(dir),dir,dir,dir))
-  sudo ('cp -r %s/jiocloud_puppet_builder /var/puppet' % dir) 
+  run('cd /tmp; tar  -zxf %s.tar.gz; cp -r /tmp/%s/jiocloud_puppet_builder/resource_spawner/fabfile.py ~/; cp -f /tmp/%s/id_rsa ~/.ssh' % (base_dir,base_dir,base_dir))
+  sudo ('cp -r /tmp/%s/jiocloud_puppet_builder /var/puppet' % base_dir) 
 
   log("Setting up the system on %s" % env.host)
-  base_dir = os.path.basename(dir)
 
   log("Run userdata.sh on lb node")
-  sudo("bash %s/jiocloud_puppet_builder/resource_spawner/userdata.sh  -r lb" % dir)
+  sudo("bash /tmp/%s/jiocloud_puppet_builder/resource_spawner/userdata.sh  -r lb" % base_dir)
 
-  log("Run fab from lb1 to setup the cloud: %s" % env.cloudname)
+  log("Run fab from lb1 to setup the cloud: %s" % env.project)
 
   ## Enable output - it is required to print inner fab messages
   output.update({'running': True, 'stdout': True, 'stderr': True})
 
-  run('fab -f ~/fabfile  -i ~ubuntu/.ssh/id_rsa --set cpservers=%s,ocservers=%s,stservers=%s,dbservers=%s,lbservers=%s setup:%s,verbose:%s,verify=%s'  % (env.cpservers,env.ocservers,env.stservers,env.dbservers,env.lbservers, dir,verbose,False))
+  run('fab -f ~/fabfile  -i ~ubuntu/.ssh/id_rsa --set cpservers=%s,ocservers=%s,stservers=%s,dbservers=%s,lbservers=%s setup:/tmp/%s,verbose:%s,verify=%s'  % (env.cpservers,env.ocservers,env.stservers,env.dbservers,env.lbservers, base_dir,verbose,False))
 #  log("Verify the cloud")
 #  sudo('fab -f ~ubuntu/%s/fabfile checkAll' % dir)
 
