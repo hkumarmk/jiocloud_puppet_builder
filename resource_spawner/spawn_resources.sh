@@ -129,6 +129,7 @@ function destroyResources() {
     sleep 3;
   done
   sleep 3
+  
   lg "Deleting the Networks"
   neutron net-delete "stg_access_${project}" || _retry 1 neutron net-delete "stg_access_${project}"
   neutron net-delete "stg_cluster_${project}" || _retry 1 neutron net-delete "stg_cluster_${project}"
@@ -371,13 +372,40 @@ function createResources() {
   lg Associating floating IP $fip to lb1
   neutron floatingip-associate $fip_id $lb1_port_id > /dev/null ||  _fail floatingip associate $fip failed
 
-  lg Adding security group rules to enable access using floating IP
-  neutron security-group-rule-create --direction ingress --protocol tcp default > /dev/null ||  _fail security group rule creation failed
-  neutron security-group-rule-create --direction ingress --protocol udp default > /dev/null ||  _fail security group rule creation failed
-  neutron security-group-rule-create --direction ingress --protocol icmp default > /dev/null ||  _fail security group rule creation failed
-  neutron security-group-rule-create --direction egress --protocol icmp default > /dev/null ||  _fail security group rule creation failed
-  neutron security-group-rule-create --direction egress --protocol tcp default > /dev/null ||  _fail security group rule creation failed
-  neutron security-group-rule-create --direction egress --protocol udp default > /dev/null ||  _fail security group rule creation failed
+# check default security group exists or not
+  secgroup="default"
+  lg finding security group default
+#  "id","security_group","direction","protocol","remote_ip_prefix","remote_group"
+  neutron security-group-list --format csv | egrep "\"${secgroup}\"" || _fail security group rule does not exists and hence failing
+	 
+  lg "security group $secgroup exists, hence adding (if necessary) group rules to $secgroup"
+
+  secrules=`neutron  security-group-rule-list -c security_group -c direction -c protocol -f csv | grep default | sed 's/\"//g'` || \
+	  _fail something went wrong while trying to check for security group rules
+
+  echo "$secrules" | grep ingress | grep tcp > /dev/null || \
+	neutron security-group-rule-create --direction ingress --protocol tcp default > /dev/null ||  \
+	_fail "security group rule creation failed in ingress tcp"
+
+  echo "$secrules" | grep ingress | grep udp >/dev/null || \
+	neutron security-group-rule-create --direction ingress --protocol udp default > /dev/null ||  \
+	_fail "security group rule creation failed in ingress udp"
+
+  echo "$secrules" | grep ingress | grep icmp > /dev/null || \
+	neutron security-group-rule-create --direction ingress --protocol icmp default > /dev/null || \
+       	_fail "security group rule creation failed in ingress icmp"
+
+  echo "$secrules" | grep egress | grep tcp > /dev/null || \
+	neutron security-group-rule-create --direction egress --protocol tcp default > /dev/null || \
+       	_fail "security group rule creation failed in egress tcp"
+  
+  echo "$secrules" | grep egress | grep udp > /dev/null || \
+          neutron security-group-rule-create --direction egress --protocol udp default > /dev/null || \
+          _fail "security group rule creation failed in egress udp"
+
+  echo "$secrules" | grep egress | grep icmp > /dev/null || \
+          neutron security-group-rule-create --direction egress --protocol icmp default > /dev/null || \
+          _fail "security group rule creation failed in egress icmp"
 
   exit 0
 
