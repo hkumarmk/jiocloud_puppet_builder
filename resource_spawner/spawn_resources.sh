@@ -164,7 +164,7 @@ function _fail() {
 
 # download Puppet content
 function setupPuppet() {
-  pushd $tmp
+  pushd $tmp/jiocloud_puppet_builder
   if ! gem list librarian-puppet-simple | grep librarian-puppet-simple ; then
     sudo apt-get install -y ruby1.9.1 rubygems
     sudo gem install --no-ri --no-rdoc librarian-puppet-simple
@@ -190,19 +190,27 @@ function setupTmpDir() {
 
 function setupHiera() {
   pushd ../
-  if [ -f hiera/user.yaml ]; then
-    cp hiera/user.yaml{,.save}
+  if [ -f $tmp/jiocloud_puppet_builder/resource_spawner/fabric.yaml ]; then
+    cp $tmp/jiocloud_puppet_builder/resource_spawner/fabric.yaml{,.save}
   fi
-  echo '' > hiera/user.yaml
+  echo '' > $tmp/jiocloud_puppet_builder/resource_spawner/fabric.yaml
   addHieraData target_version $target_version
   addHieraData project $project
+  [ $base_version -ne 0 ] && addHieraData base_version $base_version
+  addHieraData 'fabric::floating_ip' $fip
+  addHieraData 'fabric::dir_to_copy' $tmp
+  [ $verbose -ne 0 ] && addHieraData 'fabric::verbose' yes
+  addHieraData 'fabric::auth_user' $user
+  addHieraData 'fabric::auth_password' $passwd
+  addHieraData 'fabric::auth_tenant' $tenant
+  addHieraData 'fabric::auth_url' $url
+  addHieraData 'fabric::user_yaml' $tmp/jiocloud_puppet_builder/hiera/user.yaml
+  addHieraData 'fabric::ssh_key' "$tmp/id_rsa"
   popd
 }
 
 function addHieraData() {
-  pushd ../
-  echo "$1: $2" >> hiera/user.yaml
-  popd
+  echo "$1: $2" >> $tmp/jiocloud_puppet_builder/resource_spawner/fabric.yaml
 }
 
 function createResources() {
@@ -407,7 +415,6 @@ function createResources() {
           neutron security-group-rule-create --direction egress --protocol icmp default > /dev/null || \
           _fail "security group rule creation failed in egress icmp"
 
-  exit 0
 
 }
 
@@ -541,6 +548,5 @@ setupTmpDir
 pwd=`pwd`
 setupPuppet
 createResources
-cd $pwd
-rm -fr $tmp
+setupHiera
 exit 0
