@@ -179,7 +179,7 @@ def getVmList(token, nova_endpoint):
 
 
 ##This Function will create a yaml file which will be having hostname and ipaddress 
-def createResourceYaml(username, password, tenant_name, auth_url, project_name, file_path):
+def createResourceYaml(username, password, tenant_name, auth_url, project_name, file_path=None,append=True):
     nodes = {}
     DataFound = getToken(username, password, tenant_name, auth_url)
     if DataFound.getvalue() != "NULL":
@@ -207,8 +207,9 @@ def createResourceYaml(username, password, tenant_name, auth_url, project_name, 
                                                    [storage_access][0]['addr'])}})
                 except:
                     log("Variable Not Initialized")
-            wtYaml(nodes, file_path, True)
-            return 0
+            if file_path:
+              wtYaml(nodes, file_path, append)
+            return nodes
         else:
             log("Nova api call failed")
             return 100
