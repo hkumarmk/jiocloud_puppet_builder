@@ -122,6 +122,7 @@ def log(msg):
 ##This Function to get the token from keystone 
 ##This Function will return the keystone response in json 
 def getToken(username, password, tenantname, keystoneurl):
+    keystoneurl = keystoneurl+"/tokens"
     postData = '{"auth": {"tenantName": "%s",\
         "passwordCredentials":{"username":"%s", "password": "%s"}\
         }}' % (tenantname, username, password)
