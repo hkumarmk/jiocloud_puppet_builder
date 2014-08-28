@@ -207,7 +207,7 @@ function setupHiera() {
   addHieraData 'fabric::auth_password' $passwd
   addHieraData 'fabric::auth_tenant' $tenant
   addHieraData 'fabric::auth_url' $url
-  addHieraData 'fabric::user_yaml' $tmp/jiocloud_puppet_builder/hiera/user.yaml
+  addHieraData 'fabric::user_yaml' jiocloud_puppet_builder/hiera/user.yaml
   addHieraData 'fabric::ssh_key' "$tmp/id_rsa"
   popd
 }
