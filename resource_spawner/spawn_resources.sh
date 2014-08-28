@@ -184,8 +184,10 @@ function setupPuppet() {
 function setupTmpDir() {
   relative_path="`dirname $0`/../"
   puppet_builder_location=`readlink -f $relative_path`
-  [ -d $puppet_builder_location/tmp ] || mkdir $puppet_builder_location/tmp
-  export tmp=`mktemp -d $puppet_builder_location/tmp/resource_spawner.XXXXXX`
+  [ -d $puppet_builder_location/tmp/old ] || mkdir -p $puppet_builder_location/tmp/old
+  [ -e $puppet_builder_location/tmp/$project ] && mv $puppet_builder_location/tmp/$project $puppet_builder_location/tmp/old/$project.`date +%Y-%m-%d_%H-%M`
+  export tmp="$puppet_builder_location/tmp/$project"
+  mkdir $puppet_builder_location/tmp/$project 
   mkdir $tmp/jiocloud_puppet_builder
   cp -r $puppet_builder_location/bin  $puppet_builder_location/hiera  $puppet_builder_location/manifests  $puppet_builder_location/Puppetfile  $puppet_builder_location/resource_spawner $tmp/jiocloud_puppet_builder
 }

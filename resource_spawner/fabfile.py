@@ -146,13 +146,13 @@ def initiateSetup(dir,verbose='no'):
   log("Copying the files to lb node")
  
   base_dir=os.path.basename(dir)
-  os.system('cd %s; tar zcf  %s.tar.gz %s' % (os.path.dirname(dir),base_dir,base_dir))
-
+  tarfile='%s-%s.tar.gz' % (base_dir,int(time.time()))
+  os.system('cd %s; tar zcf %s %s' % (os.path.dirname(dir),tarfile,base_dir))
   ## Copy files to lb
-  execute(putFiles,hosts=env.hosts,files = {dir + ".tar.gz": '/tmp'})
+  execute(putFiles,hosts=env.hosts,files = {os.path.dirname(dir) + '/' + tarfile: '/tmp'})
 
   ### Untar and copy fab file and ssh private key and puppet code to lb
-  run('cd /tmp; tar  -zxf %s.tar.gz; cp -r /tmp/%s/jiocloud_puppet_builder/resource_spawner/{fabfile.py,fabric.yaml} ~/; cp -f /tmp/%s/id_rsa ~/.ssh' % (base_dir,base_dir,base_dir))
+  run('cd /tmp; tar  -zxf %s; cp -r /tmp/%s/jiocloud_puppet_builder/resource_spawner/{fabfile.py,fabric.yaml} ~/; cp -f /tmp/%s/id_rsa ~/.ssh' % (tarfile,base_dir,base_dir))
   sudo ('cp -r /tmp/%s/jiocloud_puppet_builder /var/puppet' % base_dir) 
 
   log("Setting up the system on %s" % env.host)
@@ -165,6 +165,7 @@ def initiateSetup(dir,verbose='no'):
   output.update({'running': True, 'stdout': True, 'stderr': True})
 
   run('fab -f ~/fabfile  -i ~ubuntu/.ssh/id_rsa fabConfig:/tmp/%s/jiocloud_puppet_builder/resource_spawner/fabric.yaml,user_yaml=/tmp/%s/%s setup:dir=/tmp/%s,verify=True,verbose=%s'  % (base_dir,base_dir,fabric_config['fabric::user_yaml'],base_dir,verbose))
+  os.system('rm -fr %s' % dir)
 #  log("Verify the cloud")
 #  sudo('fab -f ~ubuntu/%s/fabfile checkAll' % dir)
 
