@@ -201,10 +201,10 @@ function setupHiera() {
   echo '' > $tmp/jiocloud_puppet_builder/resource_spawner/fabric.yaml
   addHieraData target_version $target_version
   addHieraData project $project
-  [ $base_version -ne 0 ] && addHieraData base_version $base_version
+  addHieraData base_version $base_version 
   addHieraData 'fabric::floating_ip' $fip
   addHieraData 'fabric::dir_to_copy' $tmp
-  [ $verbose -ne 0 ] && addHieraData 'fabric::verbose' yes
+  [ $verbose -ne 0 ] && addHieraData 'fabric::verbose' yes || addHieraData 'fabric::verbose' no
   addHieraData 'fabric::auth_user' $user
   addHieraData 'fabric::auth_password' $passwd
   addHieraData 'fabric::auth_tenant' $tenant
