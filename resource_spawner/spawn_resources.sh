@@ -110,14 +110,17 @@ function destroyResources() {
   # so that we can use the subnet to ensure that we delete the floating
   # ip from the correct port
   #
-  lb_addr=`nova show lb1_${project} | grep stg_access_${project} | awk -F'|' '{print $3}'`
-  subnet_id=`neutron net-show stg_access_${project} | grep subnets | awk -F' ' '{print $4}'`
-  lb1_port_id=`neutron port-list | grep ${subnet_id} | grep "$(echo $lb_addr | awk '{print $1}')\"" | awk '{print $2}'`
-  fip_id=`neutron floatingip-list | grep ${lb1_port_id} | awk -F'|' '{print $2}'`
-  neutron floatingip-disassociate $fip_id || _retry 1 neutron floatingip-disassociate $fip_id
-  neutron floatingip-delete $fip_id || _retry 1 neutron floatingip-delete $fip_id
-
-  nova keypair-delete $project > /dev/null ||  _fail "Kepair deletion failed for $project"
+  lb_id=`nova show lb1_$project 2> /dev/null | awk '/\| *id *\|/ {print $4}'`
+  if [ `echo $lb_id  | grep -c "[a-z]"` -ne 0 ]; then
+    fip=`nova floating-ip-list | grep $lb_id | awk '{print $2}'`
+    if [ `echo $fip | grep -c "[0-9]"` -ne 0 ]; then
+      fip_id=`neutron floatingip-list |grep $fip | awk '{print $2}'`
+      lg "Deleting floating IP $fip"
+      neutron floatingip-disassociate $fip_id || _retry 1 neutron floatingip-disassociate $fip_id
+      neutron floatingip-delete $fip_id || _retry 1 neutron floatingip-delete $fip_id
+    fi
+  fi
+  nova keypair-delete $project > /dev/null 
   pkill -9 -P $$
   lg "Deleting VMs"
   for nd in `nova list | grep $project | awk '{print $2}'`; do
