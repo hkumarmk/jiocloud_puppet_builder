@@ -50,11 +50,6 @@ umount /mnt
 sed -i '/\/dev\/vdb[\s\t]*\/mnt.*/d' /etc/fstab
 
 
-## Setup bash prompt so the project name is added in the bash prompt
-cat <<'EOF' | tee -a /etc/skel/.bashrc | tee -a ~ubuntu/.bashrc | tee -a ~root/.bashrc
-export PS1=`echo "$PS1" | sed 's/@.h/@__project__\/\\\h/g'`
-EOF
-
 ### Configure apt 
 echo 'APT::Get::AllowUnauthenticated "true";' > /etc/apt/apt.conf.d/80unauthenticatedpkgs
 cat <<EOF > /etc/apt/sources.list 
