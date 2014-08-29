@@ -29,18 +29,17 @@ except Exception:  env.upgrade =  'target'
 fabConfig: read fabric.yaml and configure fab.
   It also setup user.yaml in hiera
 Arguments:
-  config_file: location of fabric.yaml
-  hosts: element name in yaml file for hosts to be connected
-  sshkey: if value set, ssh key path is setup
+  config_yaml: location of fabric.yaml
   user_yaml: if set, the fab node configuration will be get from user_yaml 
              instead of getting from undercloud nova.
 """
 
 @task
-def fabConfig(config_yaml,hosts=None,sshkey=None,user_yaml=None):
+def fabConfig(config_yaml,user_yaml=None):
   """ read fabric.yaml and configure fab. """
   global fabric_config
   ## Read the yaml file and set global variables
+  
   log("Configuring Fabric")
   fabric_config=rdYaml(config_yaml)
   base_dir=os.path.basename(config_yaml)
@@ -65,14 +64,14 @@ def fabConfig(config_yaml,hosts=None,sshkey=None,user_yaml=None):
   ## Setup env.roldefs
   env.roledefs = nodes
   
-  ## set ssh key file 
-  if sshkey:
+  if not user_yaml:
+    ## set ssh key file 
     env.key_filename = fabric_config['fabric::ssh_key']
   
-  ## Set env.hosts
-  if hosts:
-    env.hosts = fabric_config['fabric::' + hosts]
-
+    ## Set env.hosts
+    env.hosts = fabric_config['fabric::floating_ip']
+ 
+  ### Set ssh user
   env.user = 'ubuntu'
 
   ### Call genUserHiera() to generate user.yaml for hiera overrides
@@ -127,24 +126,17 @@ def wtYaml(data,file_path,append=False):
 
 
 ## initiateSetup: initiate the new setup from caller machines usually this will be jenkins server
-### Arguments: 
-#### dir - this is path to the directory which must contain all data to be passwed to the new system
-###        This directory will be copied over to remote location and run scripts and fab from it
-#### fabfile.py - this file will be served fab runs on the jumphost/lb server on the test cloud
-#### userdata.sh - this script does basic setup and installs puppet on the systems
-#### ssh private key - this will be transferred to lb server, so that it can be used as jumphost, 
-#####                  this key will be used by fab to login to other servers
 ### This will call fab from lb/jumphost server
-## Example: fab -f fabfile  -i /tmp/resource_spawner.mmlmit/id_rsa -u ubuntu -H 10.135.97.125 --set cpservers=10.1.0.253:10.1.0.252,ocservers=10.1.0.11:10.1.0.12,stservers=10.1.0.51:10.1.0.52:10.1.0.53,dbservers=10.1.0.10,lbservers=10.1.0.5,cloudname=harish1112 initiateSetup:dir=/tmp/resource_spawner.mmlmit,verbose=verbose
 
 @task
-def initiateSetup(dir,verbose='no'):
+def initiateSetup():
+  verbose = fabric_config['fabric::verbose']
   ### Print stdout and error messages only on verbose 
-  if verbose.upper() == 'NO':
+  if verbose == False:
     output.update({'running': False, 'stdout': False, 'stderr': False})
 
   log("Copying the files to lb node")
- 
+  dir =  fabric_config['fabric::directory']
   base_dir=os.path.basename(dir)
   tarfile='%s-%s.tar.gz' % (base_dir,int(time.time()))
   os.system('cd %s; tar zcf %s %s' % (os.path.dirname(dir),tarfile,base_dir))
@@ -164,7 +156,7 @@ def initiateSetup(dir,verbose='no'):
   ## Enable output - it is required to print inner fab messages
   output.update({'running': True, 'stdout': True, 'stderr': True})
 
-  run('fab -f ~/fabfile  -i ~ubuntu/.ssh/id_rsa fabConfig:/tmp/%s/jiocloud_puppet_builder/resource_spawner/fabric.yaml,user_yaml=/tmp/%s/%s setup:dir=/tmp/%s,verify=True,verbose=%s'  % (base_dir,base_dir,fabric_config['fabric::user_yaml'],base_dir,verbose))
+  run('fab -f ~/fabfile  -i ~ubuntu/.ssh/id_rsa fabConfig:/tmp/%s/jiocloud_puppet_builder/resource_spawner/fabric.yaml,user_yaml=/tmp/%s/%s setup'  % (base_dir,base_dir,fabric_config['fabric::user_yaml']))
   os.system('rm -fr %s' % dir)
 #  log("Verify the cloud")
 #  sudo('fab -f ~ubuntu/%s/fabfile checkAll' % dir)
@@ -307,11 +299,13 @@ def runCommand(cmd,run_type):
 ### Run puppet on the systems to setup openstack and other applications
 
 @task
-def setup(dir,verbose='no',verify=False):
+def setup(verify=True):
   """Setup the entire cloud system""" 
   timeout = 5
   maxAttempts = 40
-  if verbose.upper() == 'NO':
+  verbose = fabric_config['fabric::verbose']
+  ### Print stdout and error messages only on verbose 
+  if verbose == False:
     output.update({'running': False, 'stdout': False, 'stderr': False})
   log("Waiting till all servers are sshable")
   while not verifySshd(env.roledefs['all'],'ubuntu'):
@@ -320,7 +314,7 @@ def setup(dir,verbose='no',verify=False):
   log("all nodes are sshable now")
   log("Copy data to All except lb servers")
   nodes_to_run_userdata =  env.roledefs['oc'] + env.roledefs['cp'] + env.roledefs['cp'] + env.roledefs['st'] + env.roledefs['db']
-
+  dir =  '/tmp/' + fabric_config['project']
   ## Make tar
   log("Making tar")
   os.system('cd %s/..; tar zcf  %s.tar.gz %s' % (dir,dir,os.path.basename(dir)))
