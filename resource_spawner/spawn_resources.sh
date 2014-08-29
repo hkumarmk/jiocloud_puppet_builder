@@ -389,7 +389,7 @@ function createResources() {
   secgroup="default"
   lg finding security group default
 #  "id","security_group","direction","protocol","remote_ip_prefix","remote_group"
-  neutron security-group-list --format csv | egrep "\"${secgroup}\"" || _fail security group rule does not exists and hence failing
+  neutron security-group-list --format csv | egrep "\"${secgroup}\"" 2>&1 > /dev/null || _fail security group rule does not exists and hence failing
 	 
   lg "security group $secgroup exists, hence adding (if necessary) group rules to $secgroup"
 
