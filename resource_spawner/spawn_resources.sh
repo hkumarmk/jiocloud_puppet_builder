@@ -203,7 +203,7 @@ function setupHiera() {
   addHieraData project $project
   addHieraData base_version $base_version 
   addHieraData 'fabric::floating_ip' $fip
-  addHieraData 'fabric::dir_to_copy' $tmp
+  addHieraData 'fabric::directory' $tmp
   [ $verbose -ne 0 ] && addHieraData 'fabric::verbose' yes || addHieraData 'fabric::verbose' no
   addHieraData 'fabric::auth_user' $user
   addHieraData 'fabric::auth_password' $passwd
