@@ -145,7 +145,7 @@ def initiateSetup():
 
   ### Untar and copy fab file and ssh private key and puppet code to lb
   run('cd /tmp; tar  -zxf %s; cp -r /tmp/%s/jiocloud_puppet_builder/resource_spawner/{fabfile.py,fabric.yaml} ~/; cp -f /tmp/%s/id_rsa ~/.ssh' % (tarfile,base_dir,base_dir))
-  sudo ('cp -r /tmp/%s/jiocloud_puppet_builder /var/puppet' % base_dir) 
+  sudo ('mkdir -p /var/puppet && cp -r /tmp/%s/jiocloud_puppet_builder/* /var/puppet/' % base_dir)
 
   log("Setting up the system on %s" % env.host)
   log("Run userdata.sh on lb node")
@@ -324,7 +324,7 @@ def setup(verify=True):
 
   log("Running userdata script on all servers")
   ## Untar, copy puppet files, run userdata
-  command_to_run='tar -C %s -zxf %s.tar.gz; cp -r %s/jiocloud_puppet_builder  /var/puppet/; bash %s/jiocloud_puppet_builder/resource_spawner/userdata.sh -r non-lb -p http://%s:3128' % (os.path.dirname(dir),dir,dir,dir,env.roledefs['lb'][0])
+  command_to_run='tar -C %s -zxf %s.tar.gz; mkdir -p /var/puppet && cp -r %s/jiocloud_puppet_builder/*  /var/puppet/; bash %s/jiocloud_puppet_builder/resource_spawner/userdata.sh -r non-lb -p http://%s:3128' % (os.path.dirname(dir),dir,dir,dir,env.roledefs['lb'][0])
 
   execute(runCommand,hosts=nodes_to_run_userdata,cmd=command_to_run,run_type="sudo")
 
