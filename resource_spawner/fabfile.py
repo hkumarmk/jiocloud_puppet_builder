@@ -273,10 +273,11 @@ def putFiles(files,run_type=run):
     for key in files:
       print "%s -> %s" % (key,files[key])
       ## Make parent directory
-      run_type('mkdir -p %s' % files[key])
-      if run_type == sudo:
+      if run_type == 'sudo':
+        sudo('mkdir -p %s' % files[key])
         put (key,files[key],use_sudo=True)
       else:
+        run('mkdir -p %s' % files[key])
         put(key,files[key])
 
 ## run commands parallel on specified machines
