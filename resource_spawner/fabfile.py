@@ -122,7 +122,7 @@ def wtYaml(data,file_path,append=False):
   else:
     fs = file(file_path,'a')
 
-  yaml.dump(data,fs)
+  yaml.dump(data,fs,default_flow_style = False)
 
 
 ## initiateSetup: initiate the new setup from caller machines usually this will be jenkins server
