@@ -35,7 +35,7 @@ Arguments:
 """
 
 @task
-def fabConfig(config_yaml,user_yaml=None):
+def fabConfig(config_yaml,user_yaml=None,snapshot=0):
   """ read fabric.yaml and configure fab. """
   global fabric_config
   ## Read the yaml file and set global variables
@@ -52,6 +52,13 @@ def fabConfig(config_yaml,user_yaml=None):
     log("Extracting node configuration from user.yaml")
     useryaml_dict =  rdYaml(user_yaml)
     node_config = useryaml_dict['nodes']
+ 
+  ##Add apt_snapshot_version in user.yaml
+  if snapshot != 0:
+    if not fabric_config.has_key('apt_snapshot_version'):
+      fabric_config.update({'apt_snapshot_version': snapshot})
+    else:
+      fabric_config['apt_snapshot_version'] = snapshot
   
   nodes = { 'all': []}
   for node_type in node_config:
@@ -77,7 +84,7 @@ def fabConfig(config_yaml,user_yaml=None):
   ### Call genUserHiera() to generate user.yaml for hiera overrides
   if not user_yaml:
     user_yaml=fabric_config['fabric::directory'] + '/' + fabric_config['fabric::user_yaml']
-    genUserHiera(fabric_config,node_config,user_yaml)
+  genUserHiera(fabric_config,node_config,user_yaml)
 
 """
 genUserHiera - to generate user.yaml from fabric.yaml and node config
@@ -139,7 +146,7 @@ def initiateSetup():
   dir =  fabric_config['fabric::directory']
   base_dir=os.path.basename(dir)
   tarfile='%s-%s.tar.gz' % (base_dir,int(time.time()))
-  os.system('cd %s; tar zcf %s %s' % (os.path.dirname(dir),tarfile,base_dir))
+  os.system('cp fabfile.py %s/jiocloud_puppet_builder/resource_spawner; cd %s; tar zcf %s %s' % (dir,os.path.dirname(dir),tarfile,base_dir))
   ## Copy files to lb
   execute(putFiles,hosts=env.hosts,files = {os.path.dirname(dir) + '/' + tarfile: '/tmp'})
 
@@ -155,11 +162,42 @@ def initiateSetup():
 
   ## Enable output - it is required to print inner fab messages
   output.update({'running': True, 'stdout': True, 'stderr': True})
+  
+  ## If base_Version is not 0, this is an upgrade test
+  ## so upgrade the system to base version, setup cloud
+  ## Verify the setup,
+  ## Then upgrade the system to target version, then verify.
 
-  run('fab -f ~/fabfile  -i ~ubuntu/.ssh/id_rsa fabConfig:/tmp/%s/jiocloud_puppet_builder/resource_spawner/fabric.yaml,user_yaml=/tmp/%s/%s setup'  % (base_dir,base_dir,fabric_config['fabric::user_yaml']))
+  if fabric_config['base_version'] != 0:
+    log("Fab run to setup cloud with base snapshot version: %s" % fabric_config['base_version'] )
+    inner_fabrun_base_version=run('fab -f ~/fabfile  -i ~ubuntu/.ssh/id_rsa fabConfig:/tmp/%s/jiocloud_puppet_builder/resource_spawner/fabric.yaml,user_yaml=/tmp/%s/%s,snapshot=%s setup'  % (base_dir,base_dir,fabric_config['fabric::user_yaml'],fabric_config['base_version']))
+    if inner_fabrun_base_version.return_code == 0:
+      log("Fab run to setup cloud with base version: SUCCESS")
+    else:
+      log("Fab run to setup cloud with base version: FAILED")
+      return 1
+    
+    log("Fab run to setup cloud with target snapshot version: %s" % fabric_config['target_version'])
+    inner_fabrun_target_version=run('fab -f ~/fabfile  -i ~ubuntu/.ssh/id_rsa fabConfig:/tmp/%s/jiocloud_puppet_builder/resource_spawner/fabric.yaml,user_yaml=/tmp/%s/%s,snapshot=%s setup'  % (base_dir,base_dir,fabric_config['fabric::user_yaml'],fabric_config['target_version']))
+    if inner_fabrun_target_version.return_code == 0:
+      log("Fab run to setup cloud with target version: SUCCESS")
+    else:
+      log("Fab run to setup cloud with target version: FAILED")
+      return 1
+
+  ## if base_version is zero, this is functional test
+  ## so upgrade to target version, setup cloud and verify
+  else:
+    log("Fab run to setup cloud with target snapshot version: %s" % fabric_config['target_version'])
+    inner_fabrun_target_version=run('fab -f ~/fabfile  -i ~ubuntu/.ssh/id_rsa fabConfig:/tmp/%s/jiocloud_puppet_builder/resource_spawner/fabric.yaml,user_yaml=/tmp/%s/%s,snapshot=%s setup'  % (base_dir,base_dir,fabric_config['fabric::user_yaml'],fabric_config['target_version']))
+    if inner_fabrun_target_version.return_code == 0:
+      log("Fab run to setup cloud with target version: SUCCESS")
+    else:
+      log("Fab run to setup cloud with target version: FAILED")
+      return 1
+
   os.system('rm -fr %s' % dir)
-#  log("Verify the cloud")
-#  sudo('fab -f ~ubuntu/%s/fabfile checkAll' % dir)
+
 
 ##Python logger doesnt work with fab
 def log(msg):
@@ -316,10 +354,12 @@ def setup(verify=True):
   nodes_to_run_userdata =  env.roledefs['oc'] + env.roledefs['cp'] + env.roledefs['cp'] + env.roledefs['st'] + env.roledefs['db']
   dir =  '/tmp/' + fabric_config['project']
   ## Make tar
-  log("Making tar")
+  log("Copy changed user.yaml to local hiera directory")
+  execute(putFiles,hosts='localhost',files = {dir + '/' + fabric_config['fabric::user_yaml']: '/var/puppet/hiera/'},run_type='sudo')
+
+  log("Make a tar of all files and copy it to all cloud servers")
   os.system('cd %s/..; tar zcf  %s.tar.gz %s' % (dir,dir,os.path.basename(dir)))
   ## Copy the tar
-  log("Copy tar files")
   execute(putFiles,hosts=nodes_to_run_userdata,files = {dir + ".tar.gz": '/tmp'})
 
   log("Running userdata script on all servers")
