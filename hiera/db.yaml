@@ -1,6 +1,6 @@
 ---
-jiocloud::db::mysql_server_package_name: mariadb-server
-jiocloud::db::mysql_client_package_name: mariadb-client
-jiocloud::db::mysql_datadir: /data
-jiocloud::db::mysql_max_connections: 1024 
-jiocloud::db::mysql_root_pass: 'changeme'
+rjil::db::mysql_server_package_name: mariadb-server
+rjil::db::mysql_client_package_name: mariadb-client
+rjil::db::mysql_datadir: /data
+rjil::db::mysql_max_connections: 1024 
+rjil::db::mysql_root_pass: 'changeme'

@@ -1,59 +1,59 @@
 ---
-jiocloud::openstack::os_controller_nodes_pkgs_to_install: 
+rjil::openstack::os_controller_nodes_pkgs_to_install: 
   - contrail-openstack-dashboard
   - qemu-utils
   - contrail-api-lib
   - contrail-api-venv
   - python-neutronclient
 
-jiocloud::openstack::keystone_db_user: keystone
-jiocloud::openstack::keystone_db_password: keystone
-jiocloud::openstack::keystone_db_name: keystone
-jiocloud::openstack::glance_db_user: glance
-jiocloud::openstack::glance_db_password: glance
-jiocloud::openstack::glance_db_name: glance
-jiocloud::openstack::nova_db_user: nova
-jiocloud::openstack::nova_db_password: nova
-jiocloud::openstack::nova_db_name: nova
-jiocloud::openstack::cinder_db_user: cinder
-jiocloud::openstack::cinder_db_password: cinder
-jiocloud::openstack::cinder_db_name: cinder
-jiocloud::openstack::admin_email: cloud.devops@ril.com
-jiocloud::openstack::service_tenant: services
-jiocloud::openstack::keystone_cache_config_prefix: cache.keystone
-jiocloud::openstack::keystone_cache_expiration_time: 600
-jiocloud::openstack::keystone_cache_backend: dogpile.cache.memcached
+rjil::openstack::keystone_db_user: keystone
+rjil::openstack::keystone_db_password: keystone
+rjil::openstack::keystone_db_name: keystone
+rjil::openstack::glance_db_user: glance
+rjil::openstack::glance_db_password: glance
+rjil::openstack::glance_db_name: glance
+rjil::openstack::nova_db_user: nova
+rjil::openstack::nova_db_password: nova
+rjil::openstack::nova_db_name: nova
+rjil::openstack::cinder_db_user: cinder
+rjil::openstack::cinder_db_password: cinder
+rjil::openstack::cinder_db_name: cinder
+rjil::openstack::admin_email: cloud.devops@ril.com
+rjil::openstack::service_tenant: services
+rjil::openstack::keystone_cache_config_prefix: cache.keystone
+rjil::openstack::keystone_cache_expiration_time: 600
+rjil::openstack::keystone_cache_backend: dogpile.cache.memcached
 
-jiocloud::openstack::keystone_accepted_roles: 'Member, admin, swiftoperator,_member_'
-jiocloud::openstack::keystone_token_cache_size: 500
-jiocloud::openstack::keystone_token_format: uuid
-jiocloud::openstack::keystone_version: v2.0
+rjil::openstack::keystone_accepted_roles: 'Member, admin, swiftoperator,_member_'
+rjil::openstack::keystone_token_cache_size: 500
+rjil::openstack::keystone_token_format: uuid
+rjil::openstack::keystone_version: v2.0
 
-jiocloud::openstack::nova_use_syslog: no
-jiocloud::openstack::glance_use_syslog: no
-jiocloud::openstack::cinder_use_syslog: no
-jiocloud::openstack::keystone_use_syslog: no
+rjil::openstack::nova_use_syslog: no
+rjil::openstack::glance_use_syslog: no
+rjil::openstack::cinder_use_syslog: no
+rjil::openstack::keystone_use_syslog: no
 
-jiocloud::openstack::nova_workers: 2
+rjil::openstack::nova_workers: 2
 
-jiocloud::openstack::nova_conductor_workers: 3
+rjil::openstack::nova_conductor_workers: 3
 
-jiocloud::openstack::horizon::recaptcha::public_key: 'test_public_key'
-jiocloud::openstack::horizon::recaptcha::private_key: 'test_private_key'
-jiocloud::openstack::horizon::sms::hostname: smsserver.sms.com
-jiocloud::openstack::horizon::sms::system_id: hithere
-jiocloud::openstack::horizon::sms::system_password: mypassword
-jiocloud::openstack::horizon::sms::source_addr: '+913938484907'
-jiocloud::openstack::horizon_wsgi_daemon_user: horizon
-jiocloud::openstack::horizon_wsgi_daemon_group: horizon
-jiocloud::openstack::horizon_wsgi_num_procs: 3
-jiocloud::openstack::horizon_wsgi_num_threads: 10
-jiocloud::openstack::apache_docroot: /var/www
-jiocloud::openstack::nova_libvirt_type: kvm
-jiocloud::openstack::region: 'RegionOne'
-jiocloud::openstack::nova_neutron_metadata_proxy_shared_secret: 'e702a49f-e2b7-40ec-928a-e7d0770391b1'
-jiocloud::openstack::neutron_libvirt_vif_driver: 'contrail_vif.contrailvif.VRouterVIFDriver'
-jiocloud::openstack::nova_rpc_backend: 'nova.rpc.impl_zmq'
-jiocloud::openstack::cinder_rbd_secret_uuid: '8f320b45-a710-4055-ab6c-d5bd482d52d2'
-jiocloud::openstack::keystone_admin_port: 35357
-jiocloud::openstack::keystone_version: 'v2.0' 
+rjil::openstack::horizon::recaptcha::public_key: 'test_public_key'
+rjil::openstack::horizon::recaptcha::private_key: 'test_private_key'
+rjil::openstack::horizon::sms::hostname: smsserver.sms.com
+rjil::openstack::horizon::sms::system_id: hithere
+rjil::openstack::horizon::sms::system_password: mypassword
+rjil::openstack::horizon::sms::source_addr: '+913938484907'
+rjil::openstack::horizon_wsgi_daemon_user: horizon
+rjil::openstack::horizon_wsgi_daemon_group: horizon
+rjil::openstack::horizon_wsgi_num_procs: 3
+rjil::openstack::horizon_wsgi_num_threads: 10
+rjil::openstack::apache_docroot: /var/www
+rjil::openstack::nova_libvirt_type: kvm
+rjil::openstack::region: 'RegionOne'
+rjil::openstack::nova_neutron_metadata_proxy_shared_secret: 'e702a49f-e2b7-40ec-928a-e7d0770391b1'
+rjil::openstack::neutron_libvirt_vif_driver: 'contrail_vif.contrailvif.VRouterVIFDriver'
+rjil::openstack::nova_rpc_backend: 'nova.rpc.impl_zmq'
+rjil::openstack::cinder_rbd_secret_uuid: '8f320b45-a710-4055-ab6c-d5bd482d52d2'
+rjil::openstack::keystone_admin_port: 35357
+rjil::openstack::keystone_version: 'v2.0' 

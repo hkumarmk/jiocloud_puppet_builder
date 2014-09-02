@@ -1,53 +1,53 @@
 ---
 ## Base system config
-jiocloud::system::all_nodes_pkgs_to_install: 
+rjil::system::all_nodes_pkgs_to_install: 
   - vim
   - htop
   - ethtool
   - zabbix-agent
   - zabbix-sender
 
-jiocloud::system::all_nodes_pkgs_to_remove: 
+rjil::system::all_nodes_pkgs_to_remove: 
   - resolvconf
   - whoopsie
   - acpid
-jiocloud::system::all_nodes_services_to_run:
+rjil::system::all_nodes_services_to_run:
   - ssh
   - rsyslog
 ## END Base system config
 
 ## NTP server config
-jiocloud::system::ntp_server_servers: '10.204.105.101' 
-jiocloud::system::ntp_servers:
+rjil::system::ntp_server_servers: '10.204.105.101' 
+rjil::system::ntp_servers:
   - i1
   - i2
 ## END NTP server config
 
 ## network interface configuration
-jiocloud::system::compute_fe_interface: eth2
-jiocloud::system::compute_be_interface: eth3
-jiocloud::system::network_device_mtu: 9000
+rjil::system::compute_fe_interface: eth2
+rjil::system::compute_be_interface: eth3
+rjil::system::network_device_mtu: 9000
 ## END network interface configuration
 
 ## resolv.conf: setup resolv.conf 
-jiocloud::system::dnsdomainname: mu.jio
-jiocloud::system::dnssearch: 
+rjil::system::dnsdomainname: mu.jio
+rjil::system::dnssearch: 
   - mu.jio
-jiocloud::system::dnsservers:
+rjil::system::dnsservers:
   - 10.135.121.138
   - 10.135.121.107
 ## END resolv.conf:
 
 ###dns cname: Required to setup function based cname in dns 
-jiocloud::system::update_dns: no
-jiocloud::system::dns_master_server: 10.1.0.5
-jiocloud::system::dnsupdate_key: 'Ktest.+157+33094'
+rjil::system::update_dns: no
+rjil::system::dns_master_server: 10.1.0.5
+rjil::system::dnsupdate_key: 'Ktest.+157+33094'
 ### END dns cname:
 
 
-## Add environment specific sources to go to jiocloud::system::extra_active_apt_sources in environment specific hiera file.
+## Add environment specific sources to go to rjil::system::extra_active_apt_sources in environment specific hiera file.
 
-jiocloud::system::default_active_apt_sources:
+rjil::system::default_active_apt_sources:
 #FIXME: Need to set a functionality to override list
 #  - precise
 #  - precise-security

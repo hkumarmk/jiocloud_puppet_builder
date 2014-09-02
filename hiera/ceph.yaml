@@ -1,3 +1,3 @@
 ---
-jiocloud::ceph::osd_journal_type: first_partition
-jiocloud::ceph::osd_journal_size: 10
+rjil::ceph::osd_journal_type: first_partition
+rjil::ceph::osd_journal_size: 10

@@ -1,6 +1,6 @@
 ### Apt configuration
-jiocloud::system::local_repo_ip: 10.135.123.60
-jiocloud::system::apt_sources:
+rjil::system::local_repo_ip: 10.135.123.60
+rjil::system::apt_sources:
   precise: { location: 'http://10.135.96.60/mirror1/mirror/archive.ubuntu.com/ubuntu', repos: 'main restricted universe multiverse', mirror_url: 'http://archive.ubuntu.com/ubuntu'}
   precise-updates: { location: 'http://10.135.96.60/mirror1/mirror/archive.ubuntu.com/ubuntu', release: 'precise-updates', repos: 'main restricted universe multiverse', mirror_url: 'http://archive.ubuntu.com/ubuntu'}
   puppetlabs: { location: 'http://10.135.96.60/mirror1/mirror/apt.puppetlabs.com', mirror_url: 'http://apt.puppetlabs.com'}
