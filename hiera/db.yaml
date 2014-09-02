@@ -4,3 +4,8 @@ jiocloud::db::mysql_client_package_name: mariadb-client
 jiocloud::db::mysql_datadir: /data
 jiocloud::db::mysql_max_connections: 1024 
 jiocloud::db::mysql_root_pass: 'changeme'
+rjil::db::dbs:
+  novadb: { db: "%{hiera('rjil::openstack::nova_db_name')}", user: "%{hiera('rjil::openstack::nova_db_user')}", pass: "%{hiera('rjil::openstack::nova_db_password')}" }
+  keystonedb: { db: "%{hiera('rjil::openstack::keystone_db_name')}", user: "%{hiera('rjil::openstack::keystone_db_user')}", pass: "%{hiera('rjil::openstack::keystone_db_password')}" }
+  cinderdb: { db: "%{hiera('rjil::openstack::cinder_db_name')}", user: "%{hiera('rjil::openstack::cinder_db_user')}", pass: "%{hiera('rjil::openstack::cinder_db_password')}" }
+  glancedb: { db: "%{hiera('rjil::openstack::glance_db_name')}", user: "%{hiera('rjil::openstack::glance_db_user')}", pass: "%{hiera('rjil::openstack::glance_db_password')}" }
